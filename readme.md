@@ -18,3 +18,17 @@ The folder "exampledata" contains some example data that can be imported to the 
 ## Running Coalda
 
 The software needs MatLab with the toolbox `somtoolbox` and a specific SOM Server written for it. This is not part of this repository as it was not my work in the thesis. If you are interested, contact me and we can sort it out.
+
+For more information see the installation and user manual.
+
+## Licence and references
+
+(c) Wiltrud Kessler
+
+This code is made available under a [https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)](BSD licence) 2.0.
+
+
+Please reference this work for more information and cite it, if you use the software:
+Wiltrud Kessler (2010)
+Analysis and Visualization of Coreference Features.
+Diplomarbeit, Universität Stuttgart & Universidad Politécnica de Madrid.
