@@ -25,7 +25,7 @@ For more information see the installation and user manual.
 
 (c) Wiltrud Kessler
 
-This code is made available under a [https://opensource.org/licenses/BSD-3-Clause](BSD licence 2.0).
+This code is made available under a [BSD licence 2.0](https://opensource.org/licenses/BSD-3-Clause).
 
 
 Please reference this work for more information and cite it, if you use the software:
