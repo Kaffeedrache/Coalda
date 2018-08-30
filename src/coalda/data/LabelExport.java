@@ -32,6 +32,12 @@ public class LabelExport {
 
 
    /**
+      Debug mode. A lot of things on stdout.
+   */
+   private boolean debug = false;
+   
+
+   /**
       Connection to the DB    
    */
    private SSessionJdbc ses = null;
@@ -91,20 +97,23 @@ public class LabelExport {
       Iterator<LinkModel> it = links.iterator();
       while (it.hasNext()) {
          LinkModel current = it.next();
-         current.setLabel(label);
-         current.setConfidence(confidence);
-         System.out.println("Set label of link " + 
-               current.getID()
-               + " to " + current.getLabel()
-               + ", confidence " + current.getConfidence() );
+         current.setLabelAssigned(label);
+         current.setConfidence(new Double(confidence));
+         if (debug) {
+            System.out.println("Set label of link " + 
+                  current.getID()
+                  + " to " + current.getLabelAssigned()
+                  + ", confidence " + current.getConfidence() );
+         }
          // Check for error
          // TODO float comparison
-         if (current.getLabel() != label || current.getConfidence() != confidence) {
+         if (current.getLabelAssigned().intValue() != label || current.getConfidence().intValue() != confidence) {
             System.out.println("Error in labeling of link " + current.getID());
          }
       }
       // Let changes take effect.
       ses.commit();
+      ses.begin();
       
    }
   

@@ -36,6 +36,16 @@ public class CalculationImport {
    private CalculationEnhancer calcEnhancer;
 
    /**
+      Table containing the nodes of the SOM.
+   */
+   private Table tableNodes;
+
+   /**
+      Table containing the edges of the SOM.
+   */
+   private Table tableEdges;
+
+   /**
       Constructor.
    */
    public CalculationImport () {
@@ -57,11 +67,11 @@ public class CalculationImport {
 
       @return Table with the nodes
    */
-   private Table readNodes() {
-      Table nodes = new Table();
+/*   private Table readNodes() {
+      nodes = new Table();
       calcAccess.readNodes(nodes);
       return nodes;
-   }
+   }*/
 
 
    /**
@@ -75,46 +85,95 @@ public class CalculationImport {
       
       @return Table with the edges
    */
-    private Table readEdges() {
-      Table edges = new Table();
+/*    private Table readEdges() {
+      edges = new Table();
       calcAccess.readEdges(edges);
       return edges;
-   }
-
+   }*/
 
    /**
-      Gets all the information about nodes and edges
-      and puts it all together into a graph.
-      All information means:
-      - node X/Y coordinates (see @link{readNodes})
-      - node weights (see @link{readCodebook})
-      - neighbourhood of nodes (see @link{readEdges})
-      - node and edge U-Matrix values (see @link{readUmatrix})
-      - feature vectors associated with a node (see @link{readBMUs})
+      Gets some information about nodes
+      This information means:
+      - node weights (see readCodebook)
+      - feature vectors associated with a node (see readBMUs)
       
-      @return Graph of nodes connected to edges as specified
-         in the data source, is the empty graph in case of error
+      @return Table containing the nodes and information.
+         Null in case of grave error (missing codebook),
+         incomplete information in other error cases.
    */
-   public Graph readAll (int calculationID) {
-
+   public Table readSOMNodesBMUs (int calculationID) {
+   
       System.out.println("Importing calculation id: " + calculationID);
       calcAccess.setCalcID(calculationID);
-
-      Graph graph = new Graph();
+      calcEnhancer.setCalcID(calculationID);
+      
+      tableNodes = null;
+   
       try {
          // import nodes
          System.out.println("Importing nodes and codebook...");
          //Table tableNodes = readNodes(); // old
          //calcAccess.readCodebook(tableNodes); // old
-         Table tableNodes = calcAccess.readCodebook();
+         tableNodes = calcAccess.readCodebook();
+         System.out.println("... done importing nodes and codebook.");
+
+         // calculate BMUs (Best Matching Units)
+         System.out.println("Importing Best Matching Units...");
+         try {
+            calcEnhancer.calculateBMUs(tableNodes);
+            //calcAccess.readBMUs(tableNodes); // old
+         } catch (Exception e) {
+            System.out.println("Error while importing Best Matching Units.");
+            e.printStackTrace();
+         }
+         System.out.println("... done importing Best Matching Units.");
+
+      } catch (Exception e) {
+         System.out.println("There has been an error while reading information about SOM.");
+         e.printStackTrace();
+         return null;
+      }
+
+      return tableNodes;
+   }
+   
+
+   /**
+      Gets all the information about nodes
+      and puts it all together into a table.
+      All information means:
+      - node X/Y coordinates (see readNodes})
+      - node weights (see readCodebook)
+      - node U-Matrix values (see readUmatrix)
+      - feature vectors associated with a node (see readBMUs)
+      
+      @return Table containing the nodes and all information.
+         Null in case of grave error (missing codebook or edges),
+         incomplete information in other error cases.
+   */
+   public Table readSOMNodes (int calculationID) {
+
+      System.out.println("Importing calculation id: " + calculationID);
+      calcAccess.setCalcID(calculationID);
+      calcEnhancer.setCalcID(calculationID);
+      
+      tableNodes = null;
+
+      try {
+         // import nodes
+         System.out.println("Importing nodes and codebook...");
+         //Table tableNodes = readNodes(); // old
+         //calcAccess.readCodebook(tableNodes); // old
+         tableNodes = calcAccess.readCodebook();
          System.out.println("... done importing nodes and codebook.");
 
          // import edges
          System.out.println("Importing edges...");
-         Table tableEdges = readEdges();
+         tableEdges = new Table();
+         calcAccess.readEdges(tableEdges);
          System.out.println("... done importing edges.");
 
-         // calculate U-Matrix values
+         // calculate node coordinates
          System.out.println("Calculating node coordinates...");
          try {
             calcEnhancer.calculateNodes(tableNodes, tableEdges);
@@ -135,43 +194,97 @@ public class CalculationImport {
          }
          System.out.println("... done calculating U-Matrix.");
 
-         // import BMUs (Best Matching Units)
-         System.out.println("Importing Best Matching Units...");
+         // calculate BMUs (Best Matching Units)
+         System.out.println("Calculating Best Matching Units...");
          try {
-            calcAccess.readBMUs(tableNodes);
+            //calcAccess.readBMUs(tableNodes); // old
+            calcEnhancer.calculateBMUs(tableNodes);
          } catch (Exception e) {
-            System.out.println("Error while importing Best Matching Units.");
+            System.out.println("Error while calculating Best Matching Units.");
             e.printStackTrace();
          }
-         System.out.println("... done importing Best Matching Units.");
+         System.out.println("... done calculating Best Matching Units.");
 
          // calculate proportion of coreferent fvs per node
          System.out.println("Calculate proportions...");
          try {
-            //calcEnhancer.getProportions(tableNodes);
+            calcEnhancer.getProportions(tableNodes);
          } catch (Exception e) {
-            System.out.println("Error while calculing proportions.");
+            System.out.println("Error while calculating proportions.");
             e.printStackTrace();
          }
-         System.out.println("... done calculing proportions.");
+         System.out.println("... done calculating proportions.");
 
-         // Create graph 
+      } catch (Exception e) {
+         System.out.println("There has been an error while reading information about SOM.");
+         e.printStackTrace();
+         return null;
+      }
+      
+      calcAccess.finalize();
+
+      return tableNodes;
+   }
+
+
+   /**
+      Gets all the information about nodes and edges
+      and puts it all together into a graph.
+      All information means:
+      - node X/Y coordinates (see readNodes)
+      - node weights (see readCodebook)
+      - neighbourhood of nodes (see readEdges)
+      - node and edge U-Matrix values (see readUmatrix)
+      - feature vectors associated with a node (see readBMUs)
+      
+      @return Graph of nodes connected to edges as specified
+         in the data source, is the empty graph in case of error
+   */
+   public Graph readGraph (int calculationID) {
+     
+      // Read all information
+      readSOMNodes(calculationID);
+      
+      // Create additional edges for connectedness-visualization
+      System.out.println("Create additional edges...");
+      calcEnhancer.calculateConnectedness(tableNodes, tableEdges);
+      System.out.println("... edges created.");
+      
+      // Create Graph
+      Graph graph = new Graph();
+      try { 
          System.out.println("Create graph...");
          graph = new Graph(tableNodes, tableEdges, 
                false, Constants.nodeKey, Constants.edgeSource, Constants.edgeTarget);
-         System.out.println("... graph created");
-
+         System.out.println("... graph created.");
+   
       } catch (Exception e) {
          System.out.println("There has been an error while creating the graph.");
          System.out.println("Empty graph is returned.");
          e.printStackTrace();
       }
-      
-      calcAccess.finalize();
-
+   
       return graph;
    }
-
-
+   
+   
+   /**
+      Returns a table containing all nodes of a SOM.
+      Useful to call only after having called readSOMNodes.
+      @return table containing all nodes of the SOM with their information.
+   */
+   public Table getNodeTable() {
+      return tableNodes;
+   }
+   
+   
+   /**
+      Returns a table containing all edges of a SOM.
+      Useful to call only after having called readSOMNodes.
+      @return table containing all edges of the SOM with their information.
+   */
+   public Table getEdgeTable() {
+      return tableEdges;
+   }
 
 }

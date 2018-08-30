@@ -14,6 +14,8 @@ import java.awt.event.ItemListener;
 import java.io.FileReader;
 import java.util.Properties;
 import java.util.Vector;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -34,15 +36,20 @@ import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 
+import prefuse.data.expression.parser.ExpressionParser;
+
 import net.miginfocom.swing.MigLayout;
 import coalda.base.Constants;
+import coalda.base.ConstantsDataload;
+import coalda.base.Utils;
 import coalda.data.FVImport;
 import coalda.data.SOMConfigurationListener;
 import coalda.data.evaluation.SOMEvaluator;
 import coalda.data.evaluation.SOMEvaluator.ResultEV;
 import coalda.data.export.MapExporter;
-import coalda.vis.SOMDisplay;
-import coalda.vis.SOMTabbedPane;
+import coalda.ui.SOMDisplay;
+import coalda.ui.SOMTabbedPane;
+import coalda.ui.SettingsManagerComponent;
 import de.unistuttgart.ais.sukre.refinery.network.model.SOMCalculationModel;
 import de.unistuttgart.ais.sukre.refinery.network.ui.SOMConfigurationComponent;
 import de.unistuttgart.ais.sukre.refinery.network.ui.SOMConfigurationManagementComponent;
@@ -82,7 +89,7 @@ public class CoaldaVis {
       Calculation ID to loaded at startup.
       (0 = none)
    */
-   private static int calcID = 0;
+   private static int calcID = 51;//352;
 
    /**
       Tabbed Pane for the displays.
@@ -151,6 +158,10 @@ public class CoaldaVis {
    */
    public static void main(String[] args) {
 
+      // Turn off stupid output of ExpressionParser
+      Logger logger = Logger.getLogger(ExpressionParser.class.getName());
+      logger.setLevel(Level.OFF);
+     
 
       // -- Use command line parameters if there are any -------------------------
 
@@ -197,10 +208,11 @@ public class CoaldaVis {
 
       // -- Get settings -------------------------
 
-      Constants.getSettings();
+      
+      Utils.getSettings();
 
       System.out.println("Matlab SOM server name: " + Constants.matlabServer);
-      System.out.println("Database location: " + Constants.dbLocation);
+      System.out.println("Database location: " + ConstantsDataload.dbLocation);
 
 
       // -- Create components -------------------------
@@ -209,6 +221,8 @@ public class CoaldaVis {
       featuresMU = new JTextArea ("Features of Map Unit\n");
       featuresMUScroll = new JScrollPane(featuresMU);
       tmc = new TextModelComponent();
+      SettingsManagerComponent settingsMgr = new SettingsManagerComponent();
+      settingsMgr.setDisplayTab(displayTab);
 
 
       // -- Settings for the model -------------------------
@@ -230,6 +244,7 @@ public class CoaldaVis {
       // Set Matlab server and normalization method
       startConf.put(ISOMPropertiesConstants.CONNECTION_SOM_SERVER_NAME, Constants.matlabServer);
       startConf.setNormalizationMethod(Normalization.var);
+      startConf.put(ISOMPropertiesConstants.DB_URL, ConstantsDataload.dbLocation.replace("localhost:1234", "soul")); // boeser hack
 
       // Set new config as the config to use
       SOMmodel.setSomConfig(startConf); 
@@ -270,6 +285,8 @@ public class CoaldaVis {
       splitBelow.setDividerLocation(0.3);
       split.setDividerLocation(0.7);
 
+      // Show settings configuration pane
+      settingsMgr.setVisible();
 
       // -- Settings for the components of the display -------------------------
 
@@ -420,7 +437,7 @@ public class CoaldaVis {
 
       int length = Constants.possibleNodeColorings.length;
       int labels = Constants.possibleLabels.length;
-      String[] colorings = new String[length + noOfFeatures + labels + labels];
+      String[] colorings = new String[length + noOfFeatures + labels + labels + labels + labels];
       System.arraycopy(Constants.possibleNodeColorings, 0, colorings, 0, length);
       int index = length;
       // Weights
@@ -428,14 +445,24 @@ public class CoaldaVis {
          colorings[index] = Constants.nodeWeight + k;
          index++;
       }
-      // Labels
+      // Labels (gold)
       for (int k=0; k<labels;k++) {
-         colorings[index] = Constants.nodeLabel + Constants.possibleLabels[k];
+         colorings[index] = Constants.nodeLabelGold + Constants.possibleLabels[k];
          index++;
       }
-      // Proportions
+      // Proportions (gold)
       for (int k=0; k<labels;k++) {
-         colorings[index] = Constants.nodeProportion + Constants.possibleLabels[k];
+         colorings[index] = Constants.nodeProportionGold + Constants.possibleLabels[k];
+         index++;
+      }
+      // Labels (assigned)
+      for (int k=0; k<labels;k++) {
+         colorings[index] = Constants.nodeLabelAssigned + Constants.possibleLabels[k];
+         index++;
+      }
+      // Proportions (assigned)
+      for (int k=0; k<labels;k++) {
+         colorings[index] = Constants.nodeProportionAssigned + Constants.possibleLabels[k];
          index++;
       }
 
@@ -447,15 +474,9 @@ public class CoaldaVis {
              JComboBox cb = (JComboBox)e.getSource();
              String field = (String)cb.getSelectedItem();
              SOMDisplay c = (SOMDisplay)displayTab.getSelectedComponent();
-             displayTab.recolor(c, field);
+             c.recolor(field);
          }
       });
-
-      
-      
-      
-      
-
 
       // ---- Add everything to the panel ----
       JPanel weights = new JPanel(new MigLayout("fill, wrap 1"));
@@ -553,7 +574,8 @@ public class CoaldaVis {
             JRadioButtonMenuItem cb = (JRadioButtonMenuItem)e.getSource();
             String field = (String)cb.getText();
             SOMDisplay c = (SOMDisplay)displayTab.getSelectedComponent();
-            displayTab.recolor(c, field);
+            displayTab.setColorField(field);
+            c.recolor(field);
          }
       };
 
@@ -584,7 +606,7 @@ public class CoaldaVis {
       noOfFeatures = Constants.possibleLabels.length;
       for (int k=0; k<noOfFeatures;k++) {
          JRadioButtonMenuItem rbMenuItem = 
-               new JRadioButtonMenuItem(Constants.nodeLabel + Constants.possibleLabels[k]);
+               new JRadioButtonMenuItem(Constants.nodeLabelGold + Constants.possibleLabels[k]);
          recolorMenu.add(rbMenuItem);
          recolorGroup.add(rbMenuItem);
          rbMenuItem.addActionListener(recolorListener);
@@ -592,7 +614,24 @@ public class CoaldaVis {
       // We can also color segun proportions for features
       for (int k=0; k<noOfFeatures;k++) {
          JRadioButtonMenuItem rbMenuItem = 
-               new JRadioButtonMenuItem(Constants.nodeProportion + Constants.possibleLabels[k]);
+               new JRadioButtonMenuItem(Constants.nodeProportionGold + Constants.possibleLabels[k]);
+         recolorMenu.add(rbMenuItem);
+         recolorGroup.add(rbMenuItem);
+         rbMenuItem.addActionListener(recolorListener);
+      }
+      // We can also color segun labels for features
+      noOfFeatures = Constants.possibleLabels.length;
+      for (int k=0; k<noOfFeatures;k++) {
+         JRadioButtonMenuItem rbMenuItem = 
+               new JRadioButtonMenuItem(Constants.nodeLabelAssigned + Constants.possibleLabels[k]);
+         recolorMenu.add(rbMenuItem);
+         recolorGroup.add(rbMenuItem);
+         rbMenuItem.addActionListener(recolorListener);
+      }
+      // We can also color segun proportions for features
+      for (int k=0; k<noOfFeatures;k++) {
+         JRadioButtonMenuItem rbMenuItem = 
+               new JRadioButtonMenuItem(Constants.nodeProportionAssigned + Constants.possibleLabels[k]);
          recolorMenu.add(rbMenuItem);
          recolorGroup.add(rbMenuItem);
          rbMenuItem.addActionListener(recolorListener);
@@ -611,7 +650,8 @@ public class CoaldaVis {
             JRadioButtonMenuItem cb = (JRadioButtonMenuItem)e.getSource();
             String field = (String)cb.getText();
             SOMDisplay c = (SOMDisplay)displayTab.getSelectedComponent();
-            displayTab.relabel(c, field);
+            displayTab.setLabelField(field);
+            c.relabel(field);
          }
       };
 
@@ -641,7 +681,8 @@ public class CoaldaVis {
             JRadioButtonMenuItem cb = (JRadioButtonMenuItem)e.getSource();
             String field = (String)cb.getText();
             SOMDisplay c = (SOMDisplay)displayTab.getSelectedComponent();
-            displayTab.relayout(c, field);
+            displayTab.setLayoutMethod(field);
+            c.relayout(field);
          }
       };
 

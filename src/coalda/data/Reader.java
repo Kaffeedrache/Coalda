@@ -46,7 +46,9 @@ public abstract class Reader {
          features, // lines from featurevectors table
          labels, // lines from links table (join fvs)
          text, // lines from a lot of tables
-         nextCalcID // line from sequence calculation_id
+         nextCalcID, // line from sequence calculation_id
+         normalization, // line from calculations
+         usedFeatures // line from calculations
       }
 
    /**
@@ -183,7 +185,8 @@ public abstract class Reader {
          row[1] : features of this vector
       labels: row with 2 columns
          row[0] : feature vector ID
-         row[1] : label of this feature vector
+         row[1] : gold label of this feature vector
+         row[2] : assigned label of this feature vector
       text: row with 4 columns
          row[0] : feature vector ID
          row[1] : markable 1 of the link

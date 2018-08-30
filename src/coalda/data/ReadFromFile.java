@@ -9,7 +9,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.Vector;
 
-import coalda.base.Constants;
+import coalda.base.ConstantsDataload;
 import coalda.base.Utils;
 
 
@@ -88,16 +88,16 @@ public class ReadFromFile extends Reader {
       String filename = "";
       switch (type) {
          case codebook:
-            filename = Constants.codebookFile;
+            filename = ConstantsDataload.codebookFile;
             break;
          case edges:
-            filename = Constants.neighboursFile;
+            filename = ConstantsDataload.neighboursFile;
             break;
          case nodes:
-            filename = Constants.coordsFile;
+            filename = ConstantsDataload.coordsFile;
             break;
          case umatrix:
-            filename = Constants.umatFile;
+            filename = ConstantsDataload.umatFile;
             break;
       }
 
@@ -140,10 +140,10 @@ public class ReadFromFile extends Reader {
 
       switch (type) {
          case bmus: 
-            filename = Constants.bmuFile;
+            filename = ConstantsDataload.bmuFile;
             break;
          case fvids:
-            filename = Constants.fvidsFile; // TODO 
+            filename = ConstantsDataload.fvidsFile; // TODO 
             break;
          default: // no valid vector to read!
             return;
@@ -383,6 +383,8 @@ public class ReadFromFile extends Reader {
       switch (type) {
          case nextCalcID:
             return "0";
+         case normalization:
+            return "unknown";
          default:
             return null;
       }
@@ -462,7 +464,8 @@ public class ReadFromFile extends Reader {
          row[1] : features of this vector
       labels: row with 2 columns
          row[0] : feature vector ID
-         row[1] : label of this feature vector
+         row[1] : gold label of this feature vector
+         row[2] : assigned label of this feature vector
       text: row with 4 columns
          row[0] : feature vector ID
          row[1] : markable 1 of the link

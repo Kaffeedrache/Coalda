@@ -10,11 +10,11 @@ import coalda.base.Utils;
 import coalda.data.Reader.SingleInfo;
 import coalda.data.Reader.VectorInfo;
 import coalda.data.Reader.MatrixInfo;
+import de.unistuttgart.ais.sukre.somserver.matlab.calculation.SOMConfiguration.Normalization;
 
 import prefuse.data.Table;
 import prefuse.data.tuple.TupleSet;
 import prefuse.util.DataLib;
-import prefuse.util.collections.IntIterator;
 
 
 /**
@@ -219,6 +219,7 @@ public class CalculationAccess  {
 
 
    /**
+      @deprecated
       Gets the Best Matching Unit (BMU) for every feature
       vector and saves the IDs of all feature vectors who
       have this map unit as a BMU with every map unit. 
@@ -624,6 +625,77 @@ public class CalculationAccess  {
       calcID = Integer.valueOf(db.readOneLine(SingleInfo.nextCalcID)).intValue();
       return calcID;
    }
+   
+   
+   /**
+      Get normalization method used for a calculation
+      and convert it to a Normalization enumeration type.
+      
+      @return normalization method as written in db, 
+         null in case of error.
+   */
+   public Normalization getNorm() {
+      String myNorm = reader.readOneLine(SingleInfo.normalization);
+      
+      // For null return default value
+      if (myNorm == null ) {
+         return Normalization.var;
+      }
+      
+      // Return value
+      if (myNorm.equals(Normalization.var.toString())) {
+         return Normalization.var;
+      }
+   
+      if (myNorm.equals(Normalization.range.toString())) {
+         return Normalization.range;
+      }
+      
+      if (myNorm.equals(Normalization.log.toString())) {
+         return Normalization.log;
+      }
+      if (myNorm.equals(Normalization.logistic.toString())) {
+         return Normalization.logistic;
+      }
+      
+      if (myNorm.equals(Normalization.histD.toString())) {
+         return Normalization.histD;
+      }
+      
+      if (myNorm.equals(Normalization.histC.toString())) {
+         return Normalization.histC;
+      }
+         
+      return null;
+   }
+   
+   
+   /**
+      Get normalization method used for a calculation
+      and convert it to a Normalization enumeration type.
+      
+      @return normalization method as written in db, 
+         null in case of error.
+   */
+   public int[] getUsedFeatures() {
+      String features = reader.readOneLine(SingleInfo.usedFeatures);
+      
+      // Trim String and create Array of Integers
+      if (features != null && !features.trim().equals("")) {
+         String fvIDString = features.trim();
+         fvIDString = fvIDString.replace("{", "");
+         fvIDString = fvIDString.replace("}", "");
+         String[] fvs = fvIDString.split(",");
+         int[] fvIDs = new int[fvs.length];
+         for (int i = 0; i < fvs.length; i++) {
+            fvIDs[i] = Integer.parseInt(fvs[i]);
+         }
+         return fvIDs;
+      }
+         
+      return null;
+   }
+
 
    /**
       Cleanup.

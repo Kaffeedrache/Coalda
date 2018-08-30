@@ -35,13 +35,25 @@ public class LabelImport {
    */
    private Reader reader;
 
+
    /**
-      Hashmap for saving the label to a feature
+      Debug mode. A lot of things on stdout.
+   */
+   private boolean debug = false;
+   
+   /**
+      Hashmap for saving the gold label to a feature
       vector. Key is the feature vector ID, 
       value is the appropriate label.
    */
-   private HashMap<Integer, Integer> allLabels = new HashMap<Integer, Integer>();
+   private HashMap<Integer, Integer> goldLabels = new HashMap<Integer, Integer>();
 
+   /**
+      Hashmap for saving the assigned label to a feature
+      vector. Key is the feature vector ID, 
+      value is the appropriate label.
+   */
+   private HashMap<Integer, Integer> assignedLabels = new HashMap<Integer, Integer>();
 
    /**
       Load the labels of all feature vectors.
@@ -80,13 +92,21 @@ public class LabelImport {
 
       // Save all labels in Hashmap
       Integer key;
-      Integer value;
+      Integer valueGold;
+      Integer valueAssigned;
       
       while (reader.hasNextLine()) {
          String[] label = reader.nextLine();
          key = new Integer(label[0]); // id
-         value = new Integer(label[1]); // label
-         allLabels.put(key, value);
+         valueGold = new Integer(label[1]); // label
+         valueAssigned = new Integer(label[2]); // label assigned
+         goldLabels.put(key, valueGold);
+         assignedLabels.put(key, valueAssigned);
+         
+         if (debug) {
+            System.out.println("Put fv " + key 
+                  + " label(gold)=" + valueGold + " label(assigned)=" + valueAssigned);
+         }
       }
 
    }
@@ -97,6 +117,7 @@ public class LabelImport {
       passed as a parameter that have already been
       labeled coreferent and disreferent.
       FV IDs must be separated by spaces.
+      Uses gold labels.
 
       @param featureVectors 
       @return labelpair.coreferent : number of coreferent fvs
@@ -116,10 +137,10 @@ public class LabelImport {
 
          Integer currentFV = Integer.valueOf(featureVectorArray[i]);
 
-         if (allLabels.get(currentFV).intValue()==Constants.possibleLabelValues[0]) {
+         if (goldLabels.get(currentFV).intValue()==Constants.possibleLabelValues[0]) {
             coreferent++;
          }
-         if (allLabels.get(currentFV).intValue()==Constants.possibleLabelValues[1]) {
+         if (goldLabels.get(currentFV).intValue()==Constants.possibleLabelValues[1]) {
             disreferent++;
          }
 
@@ -135,15 +156,17 @@ public class LabelImport {
 
 
    /**
-      Gets number of feature vectors out of the ones
-      passed as a parameter for every label.
+      Gets number of feature vectors that have a label
+      as gold standard label for every label.
+      Includes only the feature vectors passed as parameter.
+      Uses gold standard labels.
       FV IDs must be separated by spaces.
 
       @param featureVectors 
       @return Array where each index i contains the number of 
          feature vectors that have label i
    */
-   public int[] getLabels (String featureVectors) {
+   public int[] getGoldLabels (String featureVectors) {
 
       String featureVectors2 = featureVectors.trim();
       String[] featureVectorArray = featureVectors2.split(" ");
@@ -155,7 +178,63 @@ public class LabelImport {
 
          // Get current vector and label
          Integer currentFV = Integer.valueOf(featureVectorArray[i]);
-         int currentFVLabel = allLabels.get(currentFV).intValue();
+         if (!goldLabels.containsKey(currentFV)) {
+            System.out.println("ERROR! FV ID " + currentFV + " does not exist in the labels table!");
+            continue; // avoid crash in next line
+         }
+         int currentFVLabel = goldLabels.get(currentFV).intValue();
+
+         // Find place of that label in array
+         int position = -1;
+         for (int j=0; j<Constants.possibleLabelValues.length; j++) {
+            if (currentFVLabel == Constants.possibleLabelValues[j]) {
+               position = j;
+               break;
+            }
+         }
+        
+         // Increase number of vectors that have that label
+         // If the label is not in the list of possible labels,
+         // it is discarded.
+         if (position != -1) {
+            labels[position]++;
+         }
+
+      }
+
+      return labels;
+
+   }
+   
+
+   /**
+      Gets number of feature vectors that have a label
+      as assigned label for every label.
+      Includes only the feature vectors passed as parameter.
+      Uses assigned labels.
+      FV IDs must be separated by spaces.
+
+      @param featureVectors 
+      @return Array where each index i contains the number of 
+         feature vectors that have label i
+   */
+   public int[] getAssignedLabels (String featureVectors) {
+
+      String featureVectors2 = featureVectors.trim();
+      String[] featureVectorArray = featureVectors2.split(" ");
+
+      // Initialize label array with 0
+      int[] labels = new int[Constants.possibleLabelValues.length];
+
+      for (int i=0; i<featureVectorArray.length; i++) {
+
+         // Get current vector and label
+         Integer currentFV = Integer.valueOf(featureVectorArray[i]);
+         if (!assignedLabels.containsKey(currentFV)) {
+            System.out.println("ERROR! FV ID " + currentFV + " does not exist in the labels table!");
+            continue; // avoid crash in next line
+         }
+         int currentFVLabel = assignedLabels.get(currentFV).intValue();
 
          // Find place of that label in array
          int position = -1;

@@ -14,6 +14,8 @@ import java.util.Vector;
 import java.io.BufferedReader;
 import java.io.IOException;
 
+import prefuse.data.Table;
+
 
 /**
 
@@ -240,6 +242,182 @@ public class FVImport {
          e.printStackTrace();
          return definitions;
       }
+   }
+   
+   
+   private float[] gimmeFeatures (String featureString) {
+      String featuresString = featureString.replace("{", "");
+      featuresString = featuresString.replace("}", "");
+      featuresString = featuresString.trim();
+      String[] featuresStringArray = featuresString.split(" ");
+      float[] features = new float[featuresStringArray.length];
+      for (int i=0; i<featuresStringArray.length; i++) {
+         features[i] = Float.parseFloat(featuresStringArray[i]);
+      }
+      return features;
+   }
+   
+
+   // TODO put this in prefuse Table, because we read data 3 times!!
+   
+   /**
+      Returns the values for normalizing the
+      featurevectors according to the 'var' normalization.
+      
+      This normalization normalizes the variance of a variable
+      to unity and its mean to zero.
+      Formula for variable x: x' = (x - x_mean)/x_sdev
+      where x_mean is the mean and x_sdev the standard deviation
+      of the variable.
+      
+      @return For every feature two values: 1. mean and 2. standard deviation
+   */
+   public float[][] normalizeFVs_var (String fvIDs) {
+      
+
+      reader.readLines(SingleInfo.features, fvIDs);
+      
+      String[] featurevector = reader.nextLine();
+      boolean first = true;
+      float[] features = gimmeFeatures (featurevector[1]); 
+      
+
+      float[][] normalizationParams = new float[features.length][2];
+      
+      float[] sum = new float[features.length];
+      
+      float[] squareDist = new float[features.length];
+      
+      int elements = 0;
+
+
+      // Calculate the mean
+      while (reader.hasNextLine()) {
+
+         elements++;
+         
+         if (first) {
+            // We already did read the first line, to calculate
+            // the number of vectors we have to add.
+            first = false;
+         } else {
+            featurevector = reader.nextLine();
+            features = gimmeFeatures(featurevector[1]);
+         }
+         
+         // Sum up all values
+         for (int i=0; i<features.length; i++) {
+            sum[i] += features[i];
+         }
+         
+      }
+
+      // Mean = sum / number of elements
+      for (int i=0; i<features.length; i++) {
+         normalizationParams[i][0] = sum[i]/(float)elements;
+      }
+      
+
+      // Reset reader
+      reader.readLines(SingleInfo.features, fvIDs);
+
+      // Calculate the standard deviation
+      while (reader.hasNextLine()) {
+
+         featurevector = reader.nextLine();
+         features = gimmeFeatures(featurevector[1]);
+         
+         // Sum up all distances to the mean, squared
+         for (int i=0; i<features.length; i++) {
+            float dist = features[i] - normalizationParams[i][0];
+            squareDist[i] = squareDist[i] + dist * dist;
+         }
+         
+      }
+      
+      // Standard deviation = sqrt(sum_square_dist / number of elements)
+      for (int i=0; i<features.length; i++) {
+         normalizationParams[i][1] = (float) Math.sqrt(squareDist[i]/(float)elements);
+      }
+      
+      return normalizationParams;
+   
+   }
+   
+   
+
+   /**
+   */
+   public Table getFeaturetable (String fvIDs) {
+      
+      Table fvTable = new Table();
+
+      // Add the columns for the table of nodes
+      // 'kind' is always 'node'
+      // number of feature vectors is 0 (for the moment)
+      fvTable.addColumn(Constants.kind, Constants.itemKind.class, Constants.itemKind.fv);
+      fvTable.addColumn(Constants.featureID, int.class);
+
+      reader.readLines(SingleInfo.features, fvIDs);
+      
+      String[] featurevector = reader.nextLine();
+      float[] features = gimmeFeatures (featurevector[1]);
+      boolean first = true;
+      for (int i=1; i<=features.length; i++){
+         fvTable.addColumn(Constants.features + i, double.class);
+      }
+
+      // Add dummy node with ID 0 
+      // because prefuse starts at ID 0, but we at ID 1
+      // and prefuse node IDs cannot jump a value
+      fvTable.addRow(); // for 0
+
+      int element = 1;
+      int id = 0;
+
+      while (reader.hasNextLine()) {
+
+         if (first) {
+            // We already did read the first line, to calculate
+            // the number of vectors we have to add.
+            first = false;
+         } else {
+            featurevector = reader.nextLine();
+            features = gimmeFeatures(featurevector[1]);
+         }
+         id = Integer.parseInt(featurevector[0]);
+         
+         if (debug) {
+            System.out.println("lineno " + element + " (id " + id + ")" + " : " + featurevector[1]);
+         }
+         
+         // Add new node to the table
+         fvTable.addRow();
+         fvTable.set(element, Constants.featureID, new Integer(id));
+
+         // Add all features
+         for (int i=1; i<=features.length; i++) {
+            fvTable.set(element, Constants.features + i, new Double(features[i-1]));
+         }
+
+         if (debug) {
+            System.out.print("lineno " + element 
+                  + " (id " + fvTable.getString(element, Constants.featureID) + ")" + ": ");
+            for ( int i1=1; i1<=features.length; i1++ ) {
+               System.out.print(" - Feature" + i1 + "=" + fvTable.getString(element, Constants.features + i1));
+            }
+            System.out.println();
+         }
+
+         element++;
+         
+      }
+      
+      // Remove dummy node with ID 0
+      fvTable.removeRow(0);
+      
+      return fvTable;
+   
    }
 
 

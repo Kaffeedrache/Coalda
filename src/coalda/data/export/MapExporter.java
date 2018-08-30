@@ -6,7 +6,7 @@ package coalda.data.export;
 
 
 import coalda.base.Constants;
-import coalda.data.CalculationAccess;
+import coalda.data.CalculationImport;
 import coalda.data.FVImport;
 
 import java.io.BufferedWriter;
@@ -27,21 +27,15 @@ Exports a SOM to a text file.
 */
 public class MapExporter {
    
-
    /**
       Loads data of a calculation.
    */
-   private CalculationAccess calcAccess;
-
+   private CalculationImport calcImport;
+   
    /**
       Nodes of the SOM.
    */
    private Table tableNodes;
-
-   /**
-      Edges of the SOM.
-   */
-   private Table tableEdges;
 
    /**
       Loads data of feature vectors.
@@ -58,89 +52,22 @@ public class MapExporter {
       Constructor.
    */
    public MapExporter () {
-      calcAccess = new CalculationAccess();
+      calcImport = new CalculationImport();
       importData = new FVImport();
    }
 
-
    /**
-      Gets all the information about nodes and edges
-      and puts it all together into a graph.
-      All information means:
-      - node X/Y coordinates
-      - node weights
-      - neighbourhood of nodes
-      - node and edge U-Matrix values
-      - feature vectors associated with a node
-      @param calculationID ID of calculation to be loaded.
+      Reads all information about the SOM nodes.
+      @param calculationID The ID of the calculation to be loaded.
    */
-   public void readAll (int calculationID) {
-
-      System.out.println("Importing calculation id: " + calculationID);
-      calcAccess.setCalcID(calculationID);
-
-      try {
-         // import nodes
-         System.out.println("Importing nodes...");
-         tableNodes = new Table();
-         calcAccess.readNodes(tableNodes);
-         System.out.println("... done importing nodes.");
-
-         // import edges
-         System.out.println("Importing edges...");
-         tableEdges = new Table();
-         calcAccess.readEdges(tableEdges);
-         System.out.println("... done importing edges.");
-
-         // import U-Matrix values
-         System.out.println("Importing U-Matrix...");
-         try {
-            calcAccess.readUmatrix(tableNodes, tableEdges);
-         } catch (Exception e) {
-            System.out.println("Error while importing U-Matrix.");
-            e.printStackTrace();
-         }
-         System.out.println("... done importing U-Matrix.");
-
-         // import BMUs (Best Matching Units)
-         System.out.println("Importing Best Matching Units...");
-         try {
-            calcAccess.readBMUs(tableNodes);
-         } catch (Exception e) {
-            System.out.println("Error while importing Best Matching Units.");
-            e.printStackTrace();
-         }
-         System.out.println("... done importing Best Matching Units.");
-
-         // import Codebook
-         System.out.println("Importing codebook...");
-         try {
-            calcAccess.readCodebook(tableNodes);
-         } catch (Exception e) {
-            System.out.println("Error while importing Codebook.");
-            e.printStackTrace();
-         }
-         System.out.println("... done importing codebook.");
-
-         // calculate proportion of coreferent fvs per node
-         System.out.println("Calculate proportions...");
-         try {
-            //calcAccess.getProportions(tableNodes);
-         } catch (Exception e) {
-            System.out.println("Error while calculing proportions.");
-            e.printStackTrace();
-         }
-         System.out.println("... done calculing proportions.");
-
-      } catch (Exception e) {
-         System.out.println("There has been an error while reading the data.");
-         e.printStackTrace();
-      }
+   public void readAll(int calculationID) {
+      tableNodes = calcImport.readSOMNodes(calculationID);
    }
-
+   
 
    /**
       Exports the information about the SOM to a textfile.
+      First a calculation has to be loaded with 'readAll'.
       Format is:
       MU number: <nodeID>
       <other node information>
@@ -181,21 +108,38 @@ public class MapExporter {
             }
 
             // Print labeled fvs
-            if ( tableNodes.canGetString(Constants.nodeCoDisLabel) ) {
-               out.write("All labeled: " + tableNodes.getString(nodeKey, Constants.nodeCoDisLabel) + newline);
+            if ( tableNodes.canGetString(Constants.nodeAllLabeled) ) {
+               out.write("All labeled (gold standard): " + tableNodes.getString(nodeKey, Constants.nodeAllLabeledGold) + newline);
             }
             for (int k=0; k<Constants.possibleLabels.length; k++) {
                String name = Constants.possibleLabels[k];
-                if ( tableNodes.canGetString(Constants.nodeLabel + name) ) {
-                  out.write("Labeled as " + name + ": " + tableNodes.getString(nodeKey, Constants.nodeLabel + name) + newline);
+               if ( tableNodes.canGetString(Constants.nodeLabelGold + name) ) {
+                  out.write("Labeled as " + name + " (gold): " + tableNodes.getString(nodeKey, Constants.nodeLabelGold + name) + newline);
                }
             }
             for (int k=0; k<Constants.possibleLabels.length; k++) {
                String name = Constants.possibleLabels[k];
-               if ( tableNodes.canGetString(Constants.nodeLabel + name) ) {
-                  out.write("% " + name + "/total: " + tableNodes.getString(nodeKey, Constants.nodeProportion + name) + newline);
-                }
+               if ( tableNodes.canGetString(Constants.nodeProportionGold + name) ) {
+                  out.write("% " + name + "/total (gold): " + tableNodes.getString(nodeKey, Constants.nodeProportionGold + name) + newline);
+               }
             }
+            if ( tableNodes.canGetString(Constants.nodeAllLabeledAssigned) ) {
+               out.write("All labeled (assigned): " + tableNodes.getString(nodeKey, Constants.nodeAllLabeledAssigned) + newline);
+            }
+            
+            for (int k=0; k<Constants.possibleLabels.length; k++) {
+               String name = Constants.possibleLabels[k];
+               if ( tableNodes.canGetString(Constants.nodeLabelAssigned + name) ) {
+                  out.write("Labeled as " + name + " (assigned): " + tableNodes.getString(nodeKey, Constants.nodeLabelAssigned + name) + newline);
+               }
+            }
+            for (int k=0; k<Constants.possibleLabels.length; k++) {
+               String name = Constants.possibleLabels[k];
+               if ( tableNodes.canGetString(Constants.nodeProportionAssigned + name) ) {
+                  out.write("% " + name + "/total (assigned): " + tableNodes.getString(nodeKey, Constants.nodeProportionAssigned + name) + newline);
+               }
+            }
+
             // Weights
             int i=1;
             while ( tableNodes.canGetString(Constants.nodeWeight + i) ) {

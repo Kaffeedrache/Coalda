@@ -13,8 +13,9 @@ import prefuse.data.tuple.TupleSet;
 import prefuse.visual.VisualItem;
 import coalda.base.Constants;
 import coalda.base.Utils;
-import coalda.vis.SOMDisplay;
-import coalda.vis.SOMTabbedPane;
+import coalda.data.Reader.SingleInfo;
+import coalda.ui.SOMDisplay;
+import coalda.ui.SOMTabbedPane;
 import de.unistuttgart.ais.sukre.refinery.network.model.AbstractCalculationModelListener;
 import de.unistuttgart.ais.sukre.refinery.network.model.SOMCalculationModel;
 import de.unistuttgart.ais.sukre.somserver.matlab.calculation.SOMConfiguration;
@@ -159,10 +160,26 @@ public class SOMConfigurationListener extends AbstractCalculationModelListener {
       @param model Model used for the calculation.
    */
    public void calculationFinished (SOMCalculationModel model) {
+      
+      // Cannot create global writer because of SimpleORM threading problems
+      Writer writer = Utils.makeWriter();
+      
       System.out.println("Calculation finished; draw the SOM");
       int calculationId = model.getCalculationId().intValue();
       System.out.println("Calculation id: " + calculationId);
       if (calculationId > 0) {
+         writer.setCalcID(calculationId);
+         // Add normalization method in database
+         writer.writeOneLine(SingleInfo.normalization, model.getSomConfig().getNormalizationMethod().toString());
+         // Add selected features in database
+         String usedFeaturesString = "";
+         for (int i=1; i<=selectedFeatures.length; i++) {
+            if (selectedFeatures[i-1]) {
+               usedFeaturesString = usedFeaturesString + " " + i;
+            }
+         }
+         writer.writeOneLine(SingleInfo.usedFeatures, usedFeaturesString);
+         // Display
          displayTab.addSOMDisplay(calculationId);
       } else {
          System.out.println("Error in calculation !");

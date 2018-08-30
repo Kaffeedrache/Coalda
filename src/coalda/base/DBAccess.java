@@ -1,4 +1,4 @@
-// Stefanie Wiltrud Kessler, September 2009 - April 2010
+// Stefanie Wiltrud Kessler, September 2009 - July 2010
 // Project SUKRE
 // This software is licensed under the terms of a BSD license.
 
@@ -30,10 +30,10 @@ import de.unistuttgart.ais.sukre.database.utils.DBConnectionProvider;
 
 /**
 
-@author kesslewd
 
 Provides access to a Postgres database.
 
+@author kesslewd
 */
 public class DBAccess {
 
@@ -418,7 +418,7 @@ public class DBAccess {
 
          // Open file with create skript
          // and search for the table to be created.
-         BufferedReader br = Utils.openFile(Constants.dbCreateScript);
+         BufferedReader br = Utils.openFile(ConstantsDataload.dbCreateScript);
          String line;
          String createStatement = "";
          boolean inStatement = false;

@@ -17,6 +17,8 @@ import coalda.data.ReadFromDB;
 import coalda.data.ReadFromFile;
 import coalda.data.ReadFromORM;
 import coalda.data.Reader;
+import coalda.data.WriteToORM;
+import coalda.data.Writer;
 
 import prefuse.util.io.IOLib;
 
@@ -30,6 +32,84 @@ Assortion of useful static methods.
 */
 public class Utils {
  
+
+   /**
+      Initializes all variables values in this class
+      from the configuration file.
+      Variable values that can be set in the config file are:
+      - dbCreateScript
+      - db_url
+      - db_username
+      - db_password
+      - featureDefinitionsFile
+      - matlabServer
+   */
+   public static void getSettings() {
+      try {
+         BufferedReader br = openFile(Constants.configFile);
+         String line = null;
+
+         while ( (line=br.readLine()) != null )  {
+
+            // Get key/value pairs
+            String[] pair = line.split("=");
+            String key = pair[0];
+            key = key.trim();
+            String value = pair[1];
+            value = value.trim();
+
+            // Set attribute corresponding to key
+            // to the value from the config file.
+
+            // Database attributes
+            if (key.equals("dbCreateScript")) {
+               ConstantsDataload.dbCreateScript = value; 
+            }
+            if (key.equals("db_url")) {
+               ConstantsDataload.dbLocation = value; 
+            }
+            if (key.equals("db_username")) {
+               ConstantsDataload.dbUser = value; 
+            }
+            if (key.equals("db_password")) {
+               ConstantsDataload.dbPassword = value; 
+            }
+
+            // File locations
+            if (key.equals("textFile")) {
+               ConstantsDataload.textFile = value; 
+            }
+            if (key.equals("wordFile")) {
+               ConstantsDataload.wordFile = value; 
+            }
+            if (key.equals("markableFile")) {
+               ConstantsDataload.markableFile = value; 
+            }
+            if (key.equals("linkFile")) {
+               ConstantsDataload.linkFile = value; 
+            }
+            if (key.equals("featureFile")) {
+               ConstantsDataload.featureFile = value; 
+            }
+            if (key.equals("featureDefinitionsFile")) {
+               Constants.featureDefinitionsFile = value; 
+            }
+
+            // matlab settings
+            if (key.equals("matlabServer")) {
+               Constants.matlabServer = value; 
+            }
+
+         }
+
+      } catch (IOException e) {
+         System.out.println("Error while reading configuration file - settings are ignored.");
+         e.printStackTrace();
+      }
+
+   }
+   
+   
    /**
       Method for opening a file at the given location.
       @param location Path to the file.
@@ -45,40 +125,6 @@ public class Utils {
       BufferedReader br = new BufferedReader(new InputStreamReader(is));
       return br;
    }
-
-
-   
-
-/*   *//**
-      Method for sorting an array of Featurevector IDs.
-      @param featurevectors FVIDs.
-      @return Sorted array of FVIDs.
-   *//*
-   public static String[] sortFVs (String[] featurevectors) {
-      
-      // Change to a int Array
-      int[] ids = new int[featurevectors.length];
-      for (int i=0; i<featurevectors.length;i++) {
-         try {
-            ids[i] = Integer.parseInt(featurevectors[i]);
-         } catch (NumberFormatException n) {
-            System.out.println("Cannot parse FeatureVectorID " + featurevectors[i]);
-         }
-      }
-      
-      // Sort
-      Arrays.sort(ids);
-      
-      // Get back that String array
-      String[] sorted = new String[featurevectors.length];
-      for (int i=0; i<featurevectors.length;i++) {
-         sorted[i] = ids[i] + "";
-      }
-      
-      // Return it
-      return sorted;
-   }*/
-   
    
    
    /**
@@ -117,7 +163,8 @@ public class Utils {
            
       return ids2;
    }
-   
+
+
    /**
       Method for sorting the Featurevector IDs contained in a String.
       @param featurevectors FVIDs, separated by spaces.
@@ -129,7 +176,6 @@ public class Utils {
            
       return fvString(fvs);
    }
-   
    
    
    /**
@@ -149,13 +195,8 @@ public class Utils {
    }
    
    
-   
-   
-   
-   
-   
    /**
-      Method for selected a Reader according to the settings.
+      Method for selecting a Reader according to the settings.
       A Reader can read from a Database or Files.
       Using simple SQL or simpleORM.
       Here would be the place to change if you want to 
@@ -183,7 +224,29 @@ public class Utils {
    }
    
    
+   /**
+      Method for selecting a Writer according to the settings.
+      A Writer can write to a Database or Files.
+      Using simple SQL or simpleORM.
+      Here would be the place to change if you want to 
+      use a different database product, just write a new
+      Reader and change here.
+      Classes can also load a specific Writer by themselves
+      if they don't want to have the flexibility of changing
+      the datasource.
+      May return null if Constants.db has no valid value
+      @return Reader from where the settings in Constants.db say.
+   */
+   public static Writer makeWriter() {
    
+      switch (Constants.db) {
+         case 2:
+            return new WriteToORM();
+         default:
+            return null;
+      }
+      
+   }
    
    
    

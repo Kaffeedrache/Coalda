@@ -5,6 +5,7 @@
 package coalda.vis;
 
 import coalda.base.Constants;
+import coalda.ui.SOMTabbedPane;
 
 import prefuse.Display;
 import prefuse.controls.AbstractZoomControl;

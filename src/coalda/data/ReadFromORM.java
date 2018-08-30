@@ -296,6 +296,12 @@ public class ReadFromORM extends Reader {
          case nextCalcID:
             sqlStatement = "select nextval('calculation_id_seq')";
             break;
+         case normalization:
+            sqlStatement = "select " + CalculationModel.NORMALIZATION.getColumnName() + " from calculations where calculation_id=" + calcID;
+            break;
+         case usedFeatures:
+            sqlStatement = "select " + CalculationModel.FEATURE_SUBSET.getColumnName() + " from calculations where calculation_id=" + calcID;
+            break;
          default: // no valid result set
             return null;
       }
@@ -380,7 +386,8 @@ public class ReadFromORM extends Reader {
          row[1] : features of this vector
       labels: row with 2 columns
          row[0] : feature vector ID
-         row[1] : label of this feature vector
+         row[1] : gold label of this feature vector
+         row[2] : assigned label of this feature vector
       text: row with 4 columns
          row[0] : feature vector ID
          row[1] : markable 1 of the link
@@ -417,7 +424,7 @@ public class ReadFromORM extends Reader {
                break;
             
             case labels: // return  id + label
-               line = new String[2]; 
+               line = new String[3]; 
                if (fviterator != null) {
                   //System.out.println("labels"); // TEST
                   FeatureVectorModel current = fviterator.next();
@@ -431,7 +438,8 @@ public class ReadFromORM extends Reader {
                   //LinkModel link = current.getLink(); // sometimes doesn't work...
                   //System.out.println("FV: " + fvId + "Label: " + link.getLabel());  // TEST
                   line[0] = fvId + "";
-                  line[1] = link.getLabel() + "";
+                  line[1] = link.getLabelGold() + "";
+                  line[2] = link.getLabelAssigned() + ""; // TODO assigned/gold
                   //System.out.println("return " + line[0] + "|" + line[1]); // TEST
                }
                break;

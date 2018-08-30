@@ -1,4 +1,4 @@
-// Stefanie Wiltrud Kessler, September 2009 - April 2010
+// Stefanie Wiltrud Kessler, September 2009 - July 2010
 // Project SUKRE
 // This software is licensed under the terms of a BSD license.
 
@@ -7,8 +7,8 @@ package coalda.data.evaluation;
 
 import coalda.base.Constants;
 
+import coalda.data.CalculationImport;
 import coalda.data.LabelImport;
-import coalda.data.CalculationAccess;
 import coalda.data.LabelImport.LabelPair;
 
 import prefuse.data.Table;
@@ -36,7 +36,7 @@ public class SOMEvaluator {
    /**
       Loads calculation data.
    */
-   private CalculationAccess calcAccess;
+   private CalculationImport calcImport;
 
    /**
       All nodes of the SOM.
@@ -59,7 +59,7 @@ public class SOMEvaluator {
       Loads objects for data access.
    */
    public SOMEvaluator () {
-      calcAccess = new CalculationAccess();
+      calcImport = new CalculationImport();
       allLabels = new LabelImport();
    }
 
@@ -68,16 +68,33 @@ public class SOMEvaluator {
       Method evaluate.
       Evaluates a SOM according to the following rules:
    
-   To introduce a measure of quality for the SOM that is being visualized, we attempt to label the feature vectors with the SOM using the gold standard labels. For every node of the SOM, the label of all associated feature vectors is set to be the gold standard label of the majority of its associated feature vectors. So if a node has five coreferent feature vectors and seven disreferent feature vectors, all of the feature vectors would be labeled as disreferent.
-   Label in gold standard
- & & coreferent & disreferent\\
-Labeled as & coreferent & true positives (tp) & false positives (fp)\\
- & disreferent &  false negatives (fn) & true negatives (tn)\\
-   After all feature vectors have been labeled, we compare the assigned labels to the gold standard labels. There are four different possibilites. From these numbers we can compute precision and recall. Precision $P$ indicates how many of the feature vectors that have been labeled coreferent by the software are coreferent in the gold standard. Recall $R$ indicates how many of the feature vectors that are coreferent in the gold standard have been labeled as such by the software.
-$$P = tp / (tp+fp)$$
-$$R = tp / (tp+fn)$$
-To create one measure out of precision and recall, the F1-measure $F_1$ is computed. The F1-measure is the weighted harmonic mean of precision and recall.
-$$ F_1 =  2PR / (P+R)$$
+      To introduce a measure of quality for the SOM that is being visualized,
+      we attempt to label the feature vectors with the SOM using the gold 
+      standard labels. For every node of the SOM, the label of all associated 
+      feature vectors is set to be the gold standard label of the majority of 
+      its associated feature vectors. So if a node has five coreferent 
+      feature vectors and seven disreferent feature vectors, all of the 
+      feature vectors would be labeled as disreferent.
+      Nomenclature:
+      Label in gold standard coreferent 
+         & labeled as coreferent : true positives (tp)
+         & labeled as disreferent : false negatives (fn)
+      Label in gold standard disreferent
+         & labeled as coreferent : false positives (fp)
+         & labeled as disreferent : true negatives (tn)
+      After all feature vectors have been labeled, we compare the assigned
+      labels to the gold standard labels. There are four different
+      possibilites. From these numbers we can compute precision and recall.
+      Precision P indicates how many of the feature vectors that have been
+      labeled coreferent by the software are coreferent in the gold standard.
+      Recall R indicates how many of the feature vectors that are coreferent 
+      in the gold standard have been labeled as such by the software.
+         P = tp / (tp+fp)
+         R = tp / (tp+fn)
+      To create one measure out of precision and recall, the F1-measure 
+      F_1 is computed. The F1-measure is the weighted harmonic mean of 
+      precision and recall.
+         F_1 =  2PR / (P+R)
 
       @param calculationID The ID of the calculation to evaluate.
       @return Object containing precision, recall and f1-measure of the calculation.
@@ -85,28 +102,8 @@ $$ F_1 =  2PR / (P+R)$$
    public ResultEV evaluate (int calculationID) {
 
       System.out.println("Evaluating calculation id: " + calculationID);
-      calcAccess.setCalcID(calculationID);
 
-      // Import nodes
-      System.out.println("Importing nodes...");
-      try {	
-         tableNodes = new Table();
-         calcAccess.readNodes(tableNodes);
-      } catch (Exception e) {
-         System.out.println("Error while importing Nodes.");
-         e.printStackTrace();
-      }
-      System.out.println("... done importing nodes.");
-
-      // Import BMUs (Best Matching Units)
-      System.out.println("Importing Best Matching Units...");
-      try {
-         calcAccess.readBMUs(tableNodes);
-      } catch (Exception e) {
-         System.out.println("Error while importing Best Matching Units.");
-         e.printStackTrace();
-      }
-      System.out.println("... done importing Best Matching Units.");
+      tableNodes = calcImport.readSOMNodesBMUs(calculationID);
 
       int truePositives = 0; // labeled coref and is coref
       int trueNegatives = 0; // labeled disref and is disref

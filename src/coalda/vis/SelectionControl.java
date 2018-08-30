@@ -1,9 +1,12 @@
-// Stefanie Wiltrud Kessler, September 2009 - April 2010
+// Stefanie Wiltrud Kessler, September 2009 - July 2010
 //Project SUKRE
 //This software is licensed under the terms of a BSD license.
 
 package coalda.vis;
 
+
+import coalda.ui.SOMTabbedPane;
+import coalda.ui.SOMDisplay;
 
 import java.awt.Component;
 import java.util.Iterator;
@@ -16,10 +19,10 @@ import prefuse.visual.VisualItem;
 
 
 /**
-@author kesslewd
 
 Changes the color of selected nodes.
 
+@author kesslewd
 */
 public class SelectionControl implements TupleSetListener {
 
@@ -69,7 +72,7 @@ public class SelectionControl implements TupleSetListener {
          }
          
          // Recolor all items
-         tab.recolor(display,null);
+         display.recolor(null);
       
       }
 

@@ -7,6 +7,7 @@ package coalda.vis;
 
 import coalda.base.Constants;
 import coalda.data.LabelExport;
+import coalda.data.LabelImport;
 
 import prefuse.Display;
 import prefuse.controls.FocusControl;
@@ -88,7 +89,34 @@ public class LabelControl extends FocusControl {
             LabelExport le = new LabelExport();
             le.labelFVs (fvs, label, confidence);
 
+            // Re-load data to display changes
+            // TODO is this the right place for this code?
+            LabelImport li = new LabelImport(fvs);
+            int assignedLabels[] = li.getAssignedLabels(fvs);
+            
+            String allAssigned = "";
+            for (int j=0; j<assignedLabels.length; j++) {
+               int fvnumberAssigned = assignedLabels[j];
+               String name = Constants.possibleLabels[j];
+               int total = item.getInt(Constants.nodeFVNumber);
+               if (fvnumberAssigned != 0) {
+                  float proportionAssigned = (float) fvnumberAssigned / (float) total;
+                  // Set values for node
+                  item.set(Constants.nodeLabelAssigned + name, new Integer(fvnumberAssigned));
+                  item.set(Constants.nodeProportionAssigned + name, new Float(proportionAssigned));
+               }
+               allAssigned = allAssigned + "/" + fvnumberAssigned;
+            }
+            String allGold = item.getString(Constants.nodeAllLabeledGold);
+
+            // Set labels with all labelinformation (cutting off the first /)
+            item.set(Constants.nodeAllLabeledAssigned, allAssigned.substring(1));
+            item.set(Constants.nodeAllLabeled, 
+                  allGold + "\n" + allAssigned.substring(1));
+            
+            
          }
+         
 
          // Just do whatever super does...
          super.itemClicked (item,e);

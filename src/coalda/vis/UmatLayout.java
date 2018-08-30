@@ -1,61 +1,61 @@
-// Stefanie Wiltrud Kessler, September 2009 - April 2010
+// Stefanie Wiltrud Kessler, September 2009 - July 2010
 // Project SUKRE
 // This software is licensed under the terms of a BSD license.
 
 package coalda.vis;
 
 
-import prefuse.action.layout.graph.ForceDirectedLayout;
-import prefuse.util.force.ForceSimulator;
-import prefuse.util.force.RungeKuttaIntegrator;
-import prefuse.visual.EdgeItem;
-
 import coalda.base.Constants;
 
+import prefuse.action.layout.graph.ForceDirectedLayout;
+import prefuse.visual.EdgeItem;
 
+
+/**
+
+Layouts a graph using force directed layout.
+
+@author kesslewd
+*/
 public class UmatLayout extends ForceDirectedLayout {
 
+   /**
+      Factor used to multiply the U-Matrix value with,
+      to make differences in value bigger. 
+   */
+   private int strechFactor = 50;
+   
 
-static ForceSimulator fsim = new ForceSimulator(new RungeKuttaIntegrator());
+   /**
+      Iterations for the coordinates calculation in the force-directed layout.
+      About 200 is enough with pre-layout, 500 without.
+   */
+   private int iterations = 200;
+   
 
-/*
-	static float gravConstant = -1f; 
-	static float minDistance = -1f;
-	static float theta = 0.9f;
-
-	static float drag = 0.01f; 
-	static float springCoeff = 1E-4f;  
-	static float defaultLength = 150f;  //default: 50f
-
-static {
-	        fsim.addForce(new NBodyForce(gravConstant, minDistance, theta));
-	        fsim.addForce(new DragForce(drag));
-	        fsim.addForce(new SpringForce(springCoeff, defaultLength));
-}
-
-*/
-
-
+   /**
+      Constructor.
+      @param group Which visual group to layout.
+   */
    public UmatLayout (String group) {
       super(group, false, true); // bounderies = false, runonce = true, 
-//	    super(group, fsim, false, true);
-      setIterations(200); // 200 is enough with pre-layout, 500 without
+      setIterations(iterations); 
    }
 
-//        public UmatLayout (String group,
-//		ForceSimulator fsim2, boolean enforceBounds) {
-//	    super(group, fsim2, enforceBounds, false);
-//	}
-
+   
+   /**
+      Length of the edges, based on U-matrix value.
+      @param group Which visual group to layout.
+   */
    protected float getSpringLength(EdgeItem e) {
 
-      int value = 0;
+      float value = 0;
       if ( e.canGetString(Constants.edgeUmatValue) ) {
-         value = e.getInt(Constants.edgeUmatValue);
+         value = e.getFloat(Constants.edgeUmatValue);
       }
 
       // Make differences more visible
-      value = value * 20;
+      value = value * strechFactor;
 
       // Avoid zero
       value += 1;
@@ -65,15 +65,10 @@ static {
 
    }
 
-/*
-	// two further possibilities to customize ....
-	protected float getMassValue(VisualItem n) {
-	    return 1.0f;
-	}
+   
+   // Further possibilities to customize include:
+   // - mass value of nodes (override getMassValue)
+   // - spring coefficient of edges (override getSpringCoeficient)
+   // - use custom force simulator
 
-	protected float getSpringCoefficient(EdgeItem e) {
-	    return -1; 
-	}
-
-*/
 }

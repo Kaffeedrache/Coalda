@@ -289,6 +289,9 @@ public class ReadFromDB extends Reader {
       switch (type) {
          case nextCalcID:
             sqlStatement = "select nextval('calculation_id_seq')";
+            break;         
+         case normalization:
+            sqlStatement = "select normalization from calculations where calculation_id=" + calcID;
             break;
          default: // no valid result set
             return null;
@@ -417,7 +420,8 @@ public class ReadFromDB extends Reader {
          row[1] : features of this vector
       labels: row with 2 columns
          row[0] : feature vector ID
-         row[1] : label of this feature vector
+         row[1] : gold label of this feature vector
+         row[2] : assigned label of this feature vector
       text: row with 4 columns
          row[0] : feature vector ID
          row[1] : markable 1 of the link

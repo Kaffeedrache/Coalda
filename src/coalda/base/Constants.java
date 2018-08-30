@@ -4,9 +4,7 @@
 
 package coalda.base;
 
-
-import java.io.BufferedReader;
-import java.io.IOException;
+import de.unistuttgart.ais.sukre.database.utils.IDataBaseConstants;
 
 
 /**
@@ -21,7 +19,7 @@ public class Constants {
    /**
       Config file to use.
    */
-   public static String configFile = "coalda.properties";
+   public static String configFile = IDataBaseConstants.DEFAULT_DATABASE_PROPERTIES_FILE_PATH;
 
    /**
       Use the db or read information from files.
@@ -30,7 +28,7 @@ public class Constants {
       1 - read from db, raw SQL
       2 - read from db, simpleORM
    */
-   public static int db = 0;
+   public static int db = 2;
 
 
    // ====== Information for labeling ======
@@ -63,6 +61,15 @@ public class Constants {
    */
    public static String layoutForce = "forcedirected";
 
+
+   /**
+      ConnVis Layout.
+      Shows the connectedness of the SOM by drawing
+      edges between nodes where feature vectors having
+      one of the nodes as bmu have the other as second bmu.
+   */
+   public static String layoutConnVis = "connvis";
+   
    /**
       Possible layouts for the graph.
       Write default field at index 0.
@@ -70,7 +77,8 @@ public class Constants {
    public static String[] possibleLayouts = 
    {
       layoutGrid,
-      layoutForce
+      layoutForce,
+      layoutConnVis
    };
    
 
@@ -82,6 +90,7 @@ public class Constants {
    public static enum itemKind {
       node,
       edge,
+      edge2,
       fv,
       other;
    }
@@ -140,6 +149,13 @@ public class Constants {
 
    /**
       Field of visualItem of kind node,
+      used for saving the median U-matrix value 
+      (mean of upper and lower median).
+   */
+   public static String nodeUmatValueMedian = "UmatValueMedian";
+
+   /**
+      Field of visualItem of kind node,
       used for saving the IDs of all feature vectors associated
       with this node. IDs have to be separated by spaces.
       When the node has no associated feature vectors,
@@ -159,7 +175,7 @@ public class Constants {
       actually there are as many fields for the weights
       as there are features in the input space,
       each one has as its name nodeWeight + i,
-      i being the ID of the feature.
+      i being the ID of the feature (starting with 1).
    */
    public static String nodeWeight = "Weight_";
 
@@ -167,25 +183,49 @@ public class Constants {
       Field of visualItem of kind node,
       used for saving the number of  
       feature vectors associated with this node
-      that have this label.
+      that have this label in the gold standard.
       There are as many fields for the labels
       as there are possible labels
       each one has as its name nodeLabel_ + i,
       i being the name of the label.
    */
-   public static String nodeLabel = "Label_";
+   public static String nodeLabelGold = "LabelGold_";
 
    /**
       Field of visualItem of kind node,
       used for saving the percentage of  
       feature vectors associated with this node
-      that have this label.
+      that have this label in the gold standard.
       There are as many fields for the labels
       as there are possible labels
       each one has as its name nodeProportion_ + i,
       i being the name of the label.
    */
-   public static String nodeProportion = "Proportion_";
+   public static String nodeProportionGold = "ProportionGold_";
+   
+   /**
+      Field of visualItem of kind node,
+      used for saving the number of  
+      feature vectors associated with this node
+      that have this label assigned.
+      There are as many fields for the labels
+      as there are possible labels
+      each one has as its name nodeLabel_ + i,
+      i being the name of the label.
+   */
+   public static String nodeLabelAssigned = "LabelAssigned_";
+   
+   /**
+      Field of visualItem of kind node,
+      used for saving the percentage of  
+      feature vectors associated with this node
+      that have this label assigned.
+      There are as many fields for the labels
+      as there are possible labels
+      each one has as its name nodeProportion_ + i,
+      i being the name of the label.
+   */
+   public static String nodeProportionAssigned = "ProportionAssigned_";
 
    /**
       Field of visualItem of kind node,
@@ -194,7 +234,25 @@ public class Constants {
       coreferent feature vectors associated with that node
       and "b" the number of disreferent feature vectors.
    */
-   public static String nodeCoDisLabel = "AllLabeled";
+   public static String nodeAllLabeledGold = "AllLabeledGold";
+
+   /**
+      Field of visualItem of kind node,
+      used for saving a label of the node consisting of
+      to numbers "a/b" with "a" being the number of
+      coreferent feature vectors associated with that node
+      and "b" the number of disreferent feature vectors.
+   */
+   public static String nodeAllLabeledAssigned = "AllLabeledAssigned";
+
+   /**
+      Field of visualItem of kind node,
+      used for saving a label of the node consisting of
+      to numbers "a/b" with "a" being the number of
+      coreferent feature vectors associated with that node
+      and "b" the number of disreferent feature vectors.
+   */
+   public static String nodeAllLabeled = "AllLabeled";
 
    /**
       Field of visualItem of kind edge,
@@ -224,6 +282,15 @@ public class Constants {
    public static String edgeUmatValue = "UmatValue";
 
    /**
+      Field of visualItem of kind edge,
+      used for saving connectedness value
+      indicating how many feature vectors that
+      have one of the edge's nodes as a bmu
+      have the other as a second bmu.
+   */
+   public static String edgeConnvis = "ConnVis";
+   
+   /**
       Field of visualItem of kind feature vector,
       used for saving the ID of the feature vector.
    */
@@ -239,8 +306,12 @@ public class Constants {
       Field of visualItem of kind feature vector,
       used for saving the array of features of the 
       feature vector.
+      There are as many fields for the features
+      as there are features
+      each one has as its name features_ + i,
+      i being the number of the features.
    */
-   public static String features = "Features";
+   public static String features = "Features_";
 
 
    /**
@@ -251,9 +322,15 @@ public class Constants {
     public static String[] possibleNodeColorings = 
    {
       nodeUmatValue,
-      nodeFVNumber,
+      nodeUmatValueMedian,
+      nodeFVNumber
    };
 
+    /**
+       Giving the possibility to assign no label.
+    */
+    public static String none = "none";
+    
    /**
       Possible fields that can be used for
       the nodelabel of the nodes.
@@ -261,10 +338,14 @@ public class Constants {
    */
    public static String[] possibleNodeLabels = 
    {
-      nodeCoDisLabel,
+      nodeAllLabeledGold,
+      nodeAllLabeledAssigned,
+      nodeAllLabeled,
       nodeFVNumber,
-      nodeKey
+      nodeKey,
+      none
    };
+
 
 
    // ====== Information for feature definition file ======
@@ -286,221 +367,6 @@ public class Constants {
    */
    public static String matlabServer = null;
 
-
-   // ====== Information for import from database ======
-
-   /**
-      Tablenames in the database for calculation table.
-   */
-   public static String calctable = "calculations";
-
-   /**
-      Tablenames in the database for word table.
-   */
-   public static String wordtable = "words";
-
-   /**
-      Tablenames in the database for markable table.
-   */
-   public static String markabletable = "markables";
-
-   /**
-      Tablenames in the database for entity table.
-   */
-   public static String entitytable = "entities";
-
-   /**
-      Tablenames in the database for link table.
-   */
-   public static String linktable = "links";
-
-   /**
-      Tablenames in the database for sentences table.
-   */
-   public static String texttable = "sentences";
-
-   /**
-      Tablenames in the database for feature vector table.
-   */
-   public static String featuretable = "featurevectors";
-
-   /**
-      File path to the script used for the creation of the db.
-   */
-   public static String dbCreateScript = null;
-
-   /**
-      Class name of driver for database.
-   */
-   protected static String dbDriver = "org.postgresql.Driver";
-
-   /**
-      Location of the database.
-   */
-   public static String dbLocation = null;
-
-   /**
-      User of the database.
-   */
-   protected static String dbUser = null;
-
-   /**
-      Password for the user of the database.
-   */
-   protected static String dbPassword = null;
-
-
-   // ====== Information for import from files ======
-
-   /**
-      File used for the import of a corpus,
-      containing the sentences of the corpus.
-   */
-   public static String textFile = "";
-
-   /**
-      File used for the import of a corpus,
-      containing the words of the corpus.
-   */
-   public static String wordFile = "";
-
-   /**
-      File used for the import of a corpus,
-      containing the markables of the corpus.
-   */
-   public static String markableFile = "";
-
-   /**
-      File used for the import of a corpus,
-      containing the links of the corpus.
-   */
-   public static String linkFile = "";
-
-   /**
-      File used for the import of feature vectors,
-      contains the feature vectors.
-   */
-   public static String featureFile = "";
-
-   /**
-      File used for the import of calculations,
-      contains map coordinates in output space.
-   */
-   public static String coordsFile = "/media/sda5/Diplomarbeit/svnvis_coalda/data/sm.map.coords";
-
-   /**
-      File used for the import of calculations,
-      contains the neighbourhood relations between
-      nodes in output space.
-   */
-   public static String neighboursFile =  "/media/sda5/Diplomarbeit/svnvis_coalda/data/sm.map.neighbors";
-
-   /**
-      File used for the import of calculations,
-      contains the U-matrix values for nodes
-      and edges.
-   */
-   public static String umatFile =  "/media/sda5/Diplomarbeit/svnvis_coalda/data/umat";
-
-   /**
-      File used for the import of calculations,
-      contains the BMU for every feature vector.
-   */
-   public static String bmuFile =  "/media/sda5/Diplomarbeit/svnvis_coalda/data/data.coords";
-
-   /**
-      File used for the import of calculations,
-      contains the weights of the nodes
-      in the input space dimensions.
-   */
-   public static String codebookFile =  "/media/sda5/Diplomarbeit/svnvis_coalda/data/sm.codebook";
-
-   /**
-      File used for the import of calculations,
-      contains the IDs of the feature vectors
-      used for calculation.
-   */
-   public static String fvidsFile = "";
-
-
-   // ====== Initialize ======
-
-
-   /**
-      Initializes all variables values in this class
-      from the configuration file.
-      Variable values that can be set in the config file are:
-      - dbCreateScript
-      - db_url
-      - db_username
-      - db_password
-      - featureDefinitionsFile
-      - matlabServer
-   */
-   public static void getSettings() {
-      try {
-         BufferedReader br = Utils.openFile(configFile);
-         String line = null;
-
-         while ( (line=br.readLine()) != null )  {
-
-            // Get key/value pairs
-            String[] pair = line.split("=");
-            String key = pair[0];
-            key = key.trim();
-            String value = pair[1];
-            value = value.trim();
-
-            // Set attribute corresponding to key
-            // to the value from the config file.
-
-            // Database attributes
-            if (key.equals("dbCreateScript")) {
-               dbCreateScript = value; 
-            }
-            if (key.equals("db_url")) {
-               dbLocation = value; 
-            }
-            if (key.equals("db_username")) {
-               dbUser = value; 
-            }
-            if (key.equals("db_password")) {
-               dbPassword = value; 
-            }
-
-            // File locations
-            if (key.equals("textFile")) {
-               textFile = value; 
-            }
-            if (key.equals("wordFile")) {
-               wordFile = value; 
-            }
-            if (key.equals("markableFile")) {
-               markableFile = value; 
-            }
-            if (key.equals("linkFile")) {
-               linkFile = value; 
-            }
-            if (key.equals("featureFile")) {
-               featureFile = value; 
-            }
-            if (key.equals("featureDefinitionsFile")) {
-               featureDefinitionsFile = value; 
-            }
-
-            // matlab settings
-            if (key.equals("matlabServer")) {
-            matlabServer = value; 
-            }
-
-         }
-
-      } catch (IOException e) {
-         System.out.println("Error while reading configuration file - settings are ignored.");
-         e.printStackTrace();
-      }
-
-   }
 
 
 }

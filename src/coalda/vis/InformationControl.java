@@ -5,10 +5,7 @@
 package coalda.vis;
 
 
-import java.util.Vector;
-
 import coalda.base.Constants;
-import coalda.data.FVImport;
 
 import prefuse.controls.FocusControl;
 import prefuse.visual.VisualItem;
@@ -113,21 +110,40 @@ public class InformationControl extends FocusControl {
       if ( item.canGetString(Constants.nodeUmatValue) ) {
          ta.append("U-Matrix Value: " + item.getString(Constants.nodeUmatValue) + newline);
       }
+      if ( item.canGetString(Constants.nodeUmatValueMedian) ) {
+         ta.append("U-Matrix Value (median): " + item.getString(Constants.nodeUmatValueMedian) + newline);
+      }
       
       // Print labeled fvs
-      if ( item.canGetString(Constants.nodeCoDisLabel) ) {
-         ta.append("All labeled: " + item.getString(Constants.nodeCoDisLabel) + newline);
+      if ( item.canGetString(Constants.nodeAllLabeled) ) {
+         ta.append("All labeled (gold standard): " + item.getString(Constants.nodeAllLabeledGold) + newline);
       }
       for (int k=0; k<Constants.possibleLabels.length; k++) {
          String name = Constants.possibleLabels[k];
-         if ( item.canGetString(Constants.nodeLabel + name) ) {
-            ta.append("Labeled as " + name + ": " + item.getString(Constants.nodeLabel + name) + newline);
+         if ( item.canGetString(Constants.nodeLabelGold + name) ) {
+            ta.append("Labeled as " + name + " (gold): " + item.getString(Constants.nodeLabelGold + name) + newline);
          }
       }
       for (int k=0; k<Constants.possibleLabels.length; k++) {
          String name = Constants.possibleLabels[k];
-         if ( item.canGetString(Constants.nodeLabel + name) ) {
-            ta.append("% " + name + "/total: " + item.getString(Constants.nodeProportion + name) + newline);
+         if ( item.canGetString(Constants.nodeProportionGold + name) ) {
+            ta.append("% " + name + "/total (gold): " + item.getString(Constants.nodeProportionGold + name) + newline);
+         }
+      }
+      if ( item.canGetString(Constants.nodeAllLabeledAssigned) ) {
+         ta.append("All labeled (assigned): " + item.getString(Constants.nodeAllLabeledAssigned) + newline);
+      }
+      
+      for (int k=0; k<Constants.possibleLabels.length; k++) {
+         String name = Constants.possibleLabels[k];
+         if ( item.canGetString(Constants.nodeLabelAssigned + name) ) {
+            ta.append("Labeled as " + name + " (assigned): " + item.getString(Constants.nodeLabelAssigned + name) + newline);
+         }
+      }
+      for (int k=0; k<Constants.possibleLabels.length; k++) {
+         String name = Constants.possibleLabels[k];
+         if ( item.canGetString(Constants.nodeProportionAssigned + name) ) {
+            ta.append("% " + name + "/total (assigned): " + item.getString(Constants.nodeProportionAssigned + name) + newline);
          }
       }
       
@@ -143,33 +159,7 @@ public class InformationControl extends FocusControl {
          String fvs = item.getString(Constants.nodeFVectors);
          ta.append("Assigned Feature Vectors: " + fvs + newline);
       }
-      
-// TEST
-/*      // Print associated feature vectors
-      //System.out.println("Here comes the test");
-      if ( item.canGetString(Constants.nodeFVectors) ) {
-         String fvs = item.getString(Constants.nodeFVectors);
-         //System.out.println("vectors: " + fvs);
-         FVImport fvimport = new FVImport();
-         Vector<String> bla = fvimport.getFVsOfMU(fvs);
-         //System.out.println("Features: " + bla.size());
-                for (int j=0; j<bla.size(); j++) {
-                      ta.append(bla.get(j) + newline);
-                    //  System.out.println(bla.get(j));
-             }
-                            // Print text
-      // System.out.println("Now try the text");
-       Vector<String> bla2 = fvimport.getTextOfMU(fvs);
-      // System.out.println("FeatureVs: " + bla2.size());
-                 for ( int k=0; k<bla2.size(); k++ ) {
-                 
-                    ta.append(bla2.get(k) + newline);
-              //      System.out.println(bla2.get(k));
-           }
-               
-      }*/
-// TEST END
-      
+            
    }
 
 
@@ -213,6 +203,9 @@ public class InformationControl extends FocusControl {
       }
       if ( item.canGetString(Constants.edgeUmatValue) ) {
          ta.append("U-Matrix Value: " + item.getString(Constants.edgeUmatValue) + newline);
+      }
+      if ( item.canGetString(Constants.edgeConnvis) ) {
+         ta.append("Connectedness: " + item.getString(Constants.edgeConnvis) + newline);
       }
    }
 
