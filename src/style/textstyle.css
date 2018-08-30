@@ -1,0 +1,42 @@
+.mytag {color:blue}
+#markable 
+{
+font-size:x-small;
+color:blue;
+}
+a.markable:link {color: blue; text-decoration: none; }
+a.markable:active {color: blue; }
+
+#link_coref
+{
+font-size:medium;
+color:green;
+font-weight:bold
+}
+a.link_coref:link {color: yellow; text-decoration: none; }
+a.coref:active {color: green; }
+
+#link_disref
+{
+font-size:medium;
+color:red;
+font-weight:bold
+}
+
+#markableWord
+{
+font-size:large;
+color:'#4169E1';
+font-weight:bold
+}
+
+#markableWordHighlight
+{
+font-size:large;
+color:'#BA55D3';
+font-weight:bold
+}
+
+a.link_disref:link {color: purple; text-decoration: none; }
+a.disref:active {color: red; }
+ 
