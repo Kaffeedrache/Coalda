@@ -1,35 +1,30 @@
-// Stefanie Wiltrud Kessler, September 2009 - April 2010
+// Stefanie Wiltrud Kessler, September 2009 - July 2010
 // Project SUKRE
 // This software is licensed under the terms of a BSD license.
 
 package coalda.data;
 
 
-import coalda.vis.SOMTabbedPane;
-
 import java.awt.Component;
-import java.sql.PreparedStatement;
 import java.util.Iterator;
 
 import prefuse.Visualization;
 import prefuse.data.tuple.TupleSet;
 import prefuse.visual.VisualItem;
-
 import coalda.base.Constants;
-import coalda.base.DBAccess;
-import coalda.data.FVImport;
+import coalda.base.Utils;
 import coalda.vis.SOMDisplay;
-
+import coalda.vis.SOMTabbedPane;
 import de.unistuttgart.ais.sukre.refinery.network.model.AbstractCalculationModelListener;
 import de.unistuttgart.ais.sukre.refinery.network.model.SOMCalculationModel;
 import de.unistuttgart.ais.sukre.somserver.matlab.calculation.SOMConfiguration;
 
 
 /**
-@author kesslewd
 
 Makes settings and adjustments just before and after the Matlab SOM server calculates.
 
+@author kesslewd
 */
 public class SOMConfigurationListener extends AbstractCalculationModelListener {
 
@@ -46,54 +41,29 @@ public class SOMConfigurationListener extends AbstractCalculationModelListener {
    private boolean[] selectedFeatures;
 
    /**
-      ID of feature vector having maximum ID
-      of those who have the maximum number
-      of features.
-   */
-   private int originalLastFV;
-
-   /**
       The display tab containing the displays
       the user is playing with.
    */
    private static SOMTabbedPane displayTab;
 
    /**
-      Provider of nice fresh feature vectors.
+      Writer of nice fresh feature vectors.
    */
-   private FVImport fv = new FVImport();
+   private FVExport fv = new FVExport();
 
 
    /**
-      Constructor.
-      Set the display tab from the parameter.
+      Constructor sets the display tab from the parameter.
       Calculates last FVID from database.
       
       @param display Display Tab where the user sees the visualizations.
    */
    public SOMConfigurationListener (SOMTabbedPane display) {
-      originalLastFV = fv.getMaxFVID();
-      displayTab = display;
-   }
-
-
-
-   /**
-      Constructor.
-      Set the display tab from the parameter.
-      
-      @param originalLastFVID Maximum FVID that belongs to a 
-         vector that has the original number of features.
-      @param display Display Tab where the user sees the visualizations.
-   */
-   public SOMConfigurationListener (int originalLastFVID, SOMTabbedPane display) {
-      originalLastFV = originalLastFVID;
       displayTab = display;
    }
 
 
    /**
-      Method setCalculateForSelected.
       Sets if to calculate for feature vectors of selected nodes only
       or for all feature vectors.
       
@@ -105,7 +75,6 @@ public class SOMConfigurationListener extends AbstractCalculationModelListener {
 
 
    /**
-      Method setSelectedFeatures.
       Sets the currently selected features that will
       be used for the next calculation.
       
@@ -117,7 +86,6 @@ public class SOMConfigurationListener extends AbstractCalculationModelListener {
 
 
    /**
-      Method beforeCalculationStart.
       Called just before Matlab starts the calculation.
       Here preprocessing is done, like selecting the features
       to calculate or for which feature vectors to calculate.
@@ -128,59 +96,10 @@ public class SOMConfigurationListener extends AbstractCalculationModelListener {
    public void beforeCalculationStart (SOMCalculationModel model,
          SOMConfiguration configuration) {
 
-      //get selected Features & recalculate if needed;
-      boolean recalculate = false;
-      for (boolean value : selectedFeatures) {
-         // if one value is 'false', we need to recalculate
-         if (!value) {
-            recalculate = true;
-            break;
-         }
-      }
 
-      int offset = 0;
-      int biggest = 0;
+      String fvs = ""; // which feature vectors (default : all = "")
 
-      if (recalculate && !calculateForSelected) { // TODO now not possible recalculate for selection!
-
-         System.out.println("Calculating new feature vectors with selected features...");
-
-         DBAccess db = new DBAccess();
-         String offsetString = db.stringQuery("select max(featurevector_id) from featurevectors;"); // TODO
-         offset = Integer.parseInt(offsetString);
-
-         // For which feature vectors to recalculate 
-         String sqlstatement = "insert into featurevectors values "
-               + "((select max(featurevector_id)+1 from featurevectors), "
-               + "(select array["
-               ;
-         boolean first = true;
-         for (int j=0;j<selectedFeatures.length;j++) {
-            if (selectedFeatures[j]) {
-               if (!first) {
-                  sqlstatement = sqlstatement + ",";
-               }
-               int id = j+1;
-               sqlstatement = sqlstatement + "features[" + id + "]";
-               first = false;
-            }
-         }
-         sqlstatement = sqlstatement 
-               + "] from featurevectors where featurevector_id=?),"
-               + "(select link_id from featurevectors where featurevector_id=?));";
-         PreparedStatement prepstatement = db.prepareStatement(sqlstatement);
-
-         // Make new feature vectors with subset of features and insert to db
-         biggest = offset + originalLastFV;
-         for (int i=1; i<=originalLastFV; i++) {
-            db.executePreparedStatement(prepstatement, i, i);
-         }
-
-         System.out.println("...done.");
-
-      }
-
-      // get selected map units
+      // Get selected map units
       if (calculateForSelected) {
 
          System.out.println("Selecting feature vectors to do calculation...");
@@ -193,56 +112,62 @@ public class SOMConfigurationListener extends AbstractCalculationModelListener {
             TupleSet ts = display.getVisualization().getGroup(Visualization.FOCUS_ITEMS);
             Iterator<VisualItem> tupleIterator = ts.tuples();
 
-            String fvs = "";
-            String nodes = "";
+            int nodes = 0;
             while (tupleIterator.hasNext()) {
                VisualItem vi = tupleIterator.next();
-               nodes = nodes + " " + vi.getInt(Constants.nodeKey); 
+               nodes++; 
                if (vi.getInt(Constants.nodeFVNumber) != 0) {
                   fvs = fvs + " " + vi.getString(Constants.nodeFVectors);
                }
             }
+            
             fvs = fvs.trim();
-
-            if (!fvs.equals("")) { // there are fvs
+               
+            // Sort FVs and set featurevectors in model,
+            // if there are none, take all fvs.
+            if (!fvs.equals("")) {
+               fvs = Utils.sortFVs(fvs);
                System.out.println("FVs total: " + fvs);
                model.setFeatureVectorIds(fvs);
+            } else {
+               System.out.println("Error! No feature vectors selected!");
+               System.out.println("Error! Taking all feature vectors!");
+               model.setFeatureVectorIds(null);
+               // TODO notify user graphically
             }
+            
             System.out.println("...done");
 
          }
       } else {
          // We should calculate with all fvs (null)
          model.setFeatureVectorIds(null);
-
-         // if we don't take original vectors, but
-         // the recalculated ones, map them
-         if (offset != 0) {
-            String ids = "";
-            for (int i=offset+1; i<biggest; i++) {
-               ids = ids + " " + i;
-            }
-            ids = ids.trim();
-            System.out.println("FVs total: " + ids);
-            model.setFeatureVectorIds(ids);
-         }
       }
-
+      
+      // Copy feature vectors from featurevectors table 
+      // to featurevectorscalculation table.
+      fv.copyToCalculate(selectedFeatures, fvs);
+      
       System.out.println("Finished with preprocessing, now let's calculate");
 
    }
 
 
    /**
-      Method calculationFinished.
-      Called when Matlab has finished the calculation.
+      Called when Matlab has finished the calculation, open Tab.      
       
       @param model Model used for the calculation.
    */
    public void calculationFinished (SOMCalculationModel model) {
       System.out.println("Calculation finished; draw the SOM");
-      System.out.println("Calculation id: " + model.getCalculationId());
-      displayTab.addSOMDisplay(model.getCalculationId().intValue());
+      int calculationId = model.getCalculationId().intValue();
+      System.out.println("Calculation id: " + calculationId);
+      if (calculationId > 0) {
+         displayTab.addSOMDisplay(calculationId);
+      } else {
+         System.out.println("Error in calculation !");
+         // TODO notify user graphically
+      }
    }
 
 

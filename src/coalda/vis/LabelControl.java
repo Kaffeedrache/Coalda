@@ -1,4 +1,4 @@
-// Stefanie Wiltrud Kessler, September 2009 - April 2010
+// Stefanie Wiltrud Kessler, September 2009 - July 2010
 // Project SUKRE
 // This software is licensed under the terms of a BSD license.
 
@@ -6,7 +6,7 @@ package coalda.vis;
 
 
 import coalda.base.Constants;
-import coalda.data.LabelAccess;
+import coalda.data.LabelExport;
 
 import prefuse.Display;
 import prefuse.controls.FocusControl;
@@ -18,17 +18,17 @@ import javax.swing.JOptionPane;
 
 
 /**
-@author kesslewd
 
 Allows the user to label all feature vectors of a node
 by performing a double click on it.
 
+@author kesslewd
 */
 public class LabelControl extends FocusControl {
 
 
    /**
-      Constructor.
+      Constructor with number of clicks to trigger action.
       @param clicks Number of Clicks to trigger action.
    */
    public LabelControl (int clicks) {
@@ -37,8 +37,8 @@ public class LabelControl extends FocusControl {
 
 
    /**
-      Method itemClicked.
-      Called when a user clicks on an item.
+      Called when a user clicks on an item, does the labeling.
+      Values for the labeling are asked from the user in dialogs.
       @param item The visual Item the user has clicked on.
       @param e Mouse event that triggered the call.
    */
@@ -70,7 +70,7 @@ public class LabelControl extends FocusControl {
                   "Please enter confidence value (0..100):",
                   "Labeling",
                   JOptionPane.PLAIN_MESSAGE);
-            int confidence = Integer.parseInt(labelConfidence);
+            double confidence = Float.parseFloat(labelConfidence);
 
             int label = Constants.possibleLabelValues[2]; // unlabeled = -1
 
@@ -85,8 +85,8 @@ public class LabelControl extends FocusControl {
             String fvs = item.getString(Constants.nodeFVectors);
             
             // Set label for all these feature vectors
-            LabelAccess la = new LabelAccess(false);
-            la.labelFVs (fvs, label, confidence);
+            LabelExport le = new LabelExport();
+            le.labelFVs (fvs, label, confidence);
 
          }
 

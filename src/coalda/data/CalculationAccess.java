@@ -1,4 +1,4 @@
-// Stefanie Wiltrud Kessler, September 2009 - April 2010
+// Stefanie Wiltrud Kessler, September 2009 - July 2010
 // Project SUKRE
 // This software is licensed under the terms of a BSD license.
 
@@ -6,8 +6,10 @@ package coalda.data;
 
 
 import coalda.base.Constants;
-import coalda.base.DBAccess;
-import coalda.data.Reader.InformationType;
+import coalda.base.Utils;
+import coalda.data.Reader.SingleInfo;
+import coalda.data.Reader.VectorInfo;
+import coalda.data.Reader.MatrixInfo;
 
 import prefuse.data.Table;
 import prefuse.data.tuple.TupleSet;
@@ -16,11 +18,11 @@ import prefuse.util.collections.IntIterator;
 
 
 /**
-@author kesslewd
 
 Class that reads the result of a calculation with matlab and imports them
 into prefuse data structures.
 
+@author kesslewd
 */
 public class CalculationAccess  {
 
@@ -45,22 +47,16 @@ public class CalculationAccess  {
 
 
    /**
-      Constructor.
-      Loads appropriate reader for reading from
+      Constructor loads appropriate reader for reading from
       database or files, according to the value of
       Constants.db
    */
    public CalculationAccess () {
-      if (Constants.db) {
-         reader = new ReadFromDB();
-      } else {
-         reader = new ReadFromFile();
-      }
+      reader = Utils.makeReader();
    }
 
 
    /**
-      Method setCalcID.
       Sets the calculation ID for the current calculation.
       
       @param calculationID ID of current calculation.
@@ -72,7 +68,7 @@ public class CalculationAccess  {
 
 
    /**
-      Method readNodes.
+      @deprecated
       Reads the nodes of the SOM (the map units) 
       with their X and Y value into an existing
       table (nodes are appended at the end).
@@ -106,21 +102,21 @@ public class CalculationAccess  {
       // node ID
       int element = 1;
 
-      reader.readMatrix(Reader.InformationType.nodes);
+      reader.readMatrix(MatrixInfo.nodes);
 
       while (reader.hasNextRow()) {
 
          String row = reader.nextRow();
 
          if (debug) {
-            System.out.println("lineno" + element + " : " + row);
+            System.out.println("lineno " + element + " : " + row);
          }
 
          // Add values to new table row
          nodes.addRow();
          nodes.set(element, Constants.nodeKey, Integer.valueOf(element));
-         Float x = Float.valueOf(reader.nextValue());    
-         nodes.set(element, Constants.nodeXValue, x);
+         float x = Float.valueOf(reader.nextValue()).floatValue();    
+         nodes.set(element, Constants.nodeXValue, new Float(x));
          float y = Float.valueOf(reader.nextValue()).floatValue() * (-1);
          nodes.set(element, Constants.nodeYValue, new Float(y));
 
@@ -147,7 +143,6 @@ public class CalculationAccess  {
 
 
    /**
-      Method readEdges.
       Reads the neighbourhood relations of the SOM
       and converts them into a table of edges. Edges
       are appended to an existing table.
@@ -168,7 +163,7 @@ public class CalculationAccess  {
       edges.addColumn(Constants.edgeSource, int.class);
       edges.addColumn(Constants.edgeTarget, int.class);
 
-      reader.readMatrix(Reader.InformationType.edges);
+      reader.readMatrix(MatrixInfo.edges);
 
       int lineno = 1;
       int element = 0;
@@ -224,7 +219,6 @@ public class CalculationAccess  {
 
 
    /**
-      Method readBMUs.
       Gets the Best Matching Unit (BMU) for every feature
       vector and saves the IDs of all feature vectors who
       have this map unit as a BMU with every map unit. 
@@ -238,21 +232,17 @@ public class CalculationAccess  {
       @param nodes Table with the nodes
    */
    public void readBMUs(Table nodes) {
+      // TODO sort FVs?
 
       // Add the fields for the table of nodes
       nodes.addColumn(Constants.nodeFVectors, String.class);
 
-      reader.readVector(InformationType.bmus);
+      reader.readVector(VectorInfo.bmus);
 
-      Reader fvReader;
-      if (Constants.db) {
-         fvReader = new ReadFromDB();
-      } else {
-         fvReader = new ReadFromFile();
-      }
+      Reader fvReader = Utils.makeReader();
 
       fvReader.setCalcID(calcID); 
-      fvReader.readVector(InformationType.fvids);
+      fvReader.readVector(VectorInfo.fvids);
 
       // ID of current feature vector
       int fvid = 0;
@@ -308,9 +298,24 @@ public class CalculationAccess  {
 
    }
 
+   /**
+      Reads the weights of every map unit of the SOM 
+      in every dimension of the feature vector space.
+      Names/Type of the columns added: 
+      - Constants.nodeWeightI (float) : weight of this
+         map unit in dimension I (where I ranges from
+         1 to number of dimensions) 
+         
+      @returns Table with the nodes
+    */
+   public Table readCodebook(){
+      Table nodes = new Table();
+      readCodebook(nodes, true);
+      return nodes;
+   }
+
 
    /**
-      Method readCodebook.
       Reads the weights of every map unit of the SOM 
       in every dimension of the feature vector space.
       Names/Type of the columns added: 
@@ -321,8 +326,41 @@ public class CalculationAccess  {
       @param nodes Table with the nodes
     */
    public void readCodebook(Table nodes){
+      readCodebook(nodes, false);
+   }
+   
+   
+   /**
+      Reads the weights of every map unit of the SOM 
+      in every dimension of the feature vector space.
+      Names/Type of the columns added: 
+      - Constants.nodeWeightI (float) : weight of this
+         map unit in dimension I (where I ranges from
+         1 to number of dimensions) 
+         
+      @param nodes Table with the nodes
+      @param create Create nodes or take existing nodes
+    */
+   public void readCodebook(Table nodes, boolean create){
 
-      reader.readMatrix(InformationType.codebook);
+      if (create) {
+            
+         // Add the columns for the table of nodes
+         // 'kind' is always 'node'
+         // number of feature vectors is 0 (for the moment)
+         nodes.addColumn(Constants.kind, Constants.itemKind.class, Constants.itemKind.node);
+         nodes.addColumn(Constants.nodeKey, int.class);
+         nodes.addColumn(Constants.nodeFVNumber, int.class, new Integer(0));
+
+         // Add dummy node with ID 0 
+         // because prefuse starts at ID 0, but we at ID 1
+         // and prefuse node IDs cannot jump a value
+         nodes.addRow(); // for 0
+
+      }
+      
+      // Get codebook values
+      reader.readMatrix(MatrixInfo.codebook);
 
       // Add weight fields for number of features.
       // Get first row and determine number of features,
@@ -348,7 +386,13 @@ public class CalculationAccess  {
          }
 
          if (debug) {
-            System.out.println("lineno" + lineno + " : " + row);
+            System.out.println("lineno " + lineno + " : " + row);
+         }
+         
+         if (create) {
+            // Add new node to the table
+            nodes.addRow();
+            nodes.set(lineno, Constants.nodeKey, Integer.valueOf(lineno));
          }
 
          // Add all features
@@ -361,7 +405,7 @@ public class CalculationAccess  {
          }
 
          if (debug) {
-            System.out.print("lineno" + lineno + ": ");
+            System.out.print("lineno " + lineno + ": ");
             for ( int i1=1; i1<=reader.numberOfValues(); i1++ ) {
                System.out.print(" - Weight" + i1 + "=" + nodes.getString(lineno, Constants.nodeWeight + i1));
             }
@@ -371,11 +415,16 @@ public class CalculationAccess  {
           lineno++;
 
       }
+      
+      if (create) {
+         // Remove dummy node with ID 0
+         nodes.removeRow(0);
+      }
    }
 
 
    /**
-      Method readUmatrix.
+      @deprecated
       Reads the values of an U-Matrix into the tables
       of nodes and edges. At the end every node and
       every edge should have an U-Matrix value.
@@ -391,15 +440,17 @@ public class CalculationAccess  {
       @param nodes Table with the nodes (must be not null)
       @param edges Table with the edges (must be not null)
     */
-   public void readUmatrix(Table nodes, Table edges){
+   public void readUmatrix(Table nodes, Table edges) {
 
+      // TODO Different shapes of map
+      
       // Add the field for the table of nodes
       nodes.addColumn(Constants.nodeUmatValue, float.class);
 
       // Add the field for the table of edges
       edges.addColumn(Constants.edgeUmatValue, float.class);
 
-      reader.readMatrix(InformationType.umatrix);
+      reader.readMatrix(MatrixInfo.umatrix);
 
       // Numeration goes column-wise, so first row first column is
       // node 1, third row first column is node 2, etc.
@@ -561,99 +612,6 @@ public class CalculationAccess  {
 
 
    /**
-      Method getProportions.
-      Calculates the number of coreferent and 
-      disreferent feature vectors associated with this
-      node and the proportions.
-      Names/Type of the columns added: 
-      - nodeProportion (float) : Proportion of coreferent
-          fv out of all fvs associated with this node.
-      - nodeProportionDis (float) : Proportion of disreferent
-          fv out of all fvs associated with this node.
-      - nodeCorefNumber (int) : Number of coreferent
-          fv associated with this node.
-      - nodeDisrefNumber (int) : Number of disreferent
-          fv associated with this node.
-      - nodeCoDisLabel (String) : Label 
-          (nodeCorefNumber / nodeDisrefNumber)
-      
-      @param nodes Table with the nodes
-    */
-   public void getProportions(Table nodes){
-
-      // Add the fields for the table of nodes
-      nodes.addColumn(Constants.nodeProportion, float.class, new Float(0));
-      nodes.addColumn(Constants.nodeProportionDis, float.class, new Float(0));
-      nodes.addColumn(Constants.nodeCorefNumber, int.class, new Integer(0));
-      nodes.addColumn(Constants.nodeDisrefNumber, int.class, new Integer(0));
-      nodes.addColumn(Constants.nodeCoDisLabel, String.class);
-
-      // Get all feature vectors used in this calculation
-      String[] fvIDArray= reader.readCompleteVector(InformationType.fvids);
-
-      // Write them to a String separated with spaces
-      String fvIDs = "";
-      if (fvIDArray != null && fvIDArray.length != 0) {
-         for (String fvID : fvIDArray) {
-            fvIDs = fvIDs + " " + fvID;
-         }
-         fvIDs = fvIDs.trim();
-      }
-
-      // There are all the labels
-      LabelAccess allLabels = new LabelAccess(fvIDs);
-
-      // Go through all the nodes
-      IntIterator nodeKeys = nodes.rows();
-
-      while (nodeKeys.hasNext()) {
-
-         int nodeKey = nodeKeys.nextInt();
-
-         // Get feature vectors associated with the node
-         String featureVectors = nodes.getString(nodeKey, Constants.nodeFVectors);
-
-         if (featureVectors != null) { // Node has associated feature vectors
-               
-            // Get number of coreferent feature vectors
-            int[] amount = allLabels.getCoDisref(featureVectors);
-            int coreferent = amount[0];
-            int disreferent = amount[1];
-
-            // TODO confidence value?
-
-            // Calculate percentage of coreferent links to total
-            int total = nodes.getInt(nodeKey, Constants.nodeFVNumber);
-            float proportion = (float) coreferent / (float) total;
-            float proportionDis = (float) disreferent / (float) total;
-
-            if (debug) {
-                System.out.println("node " + nodeKey + " : "
-                     + coreferent + " fvs coref out of " 
-                     + total + " total = " + proportion);
-            }
-
-            // Set value for node
-            nodes.set(nodeKey, Constants.nodeProportion, new Float(proportion));
-            nodes.set(nodeKey, Constants.nodeProportionDis, new Float(proportionDis));
-            nodes.set(nodeKey, Constants.nodeCorefNumber, new Integer(coreferent));
-            nodes.set(nodeKey, Constants.nodeDisrefNumber, new Integer(disreferent));
-            nodes.set(nodeKey, Constants.nodeCoDisLabel, coreferent + "/" + disreferent);
-
-         } else {
-            // for nodes without feature vectors set a default label 
-            // to enable the label renderer to show something
-            nodes.set(nodeKey, Constants.nodeCoDisLabel, "0");
-         }
-
-      }
-
-   }
-
-
-
-   /**
-      Method getNextCalcID.
       Gets next calculation ID.
       If we are working on a database, this is the
       next value of the sequence.
@@ -662,15 +620,17 @@ public class CalculationAccess  {
       @return calculationID ID of calculation.
     */
    public int getNextCalcID () {
-      if (Constants.db) {
-         DBAccess db = new DBAccess();
-         calcID = Integer.valueOf(db.stringQuery("select nextval('calculation_id_seq')"));
-         return calcID;
-      } else {
-         return 0;
-      }
+      Reader db = Utils.makeReader();
+      calcID = Integer.valueOf(db.readOneLine(SingleInfo.nextCalcID)).intValue();
+      return calcID;
    }
 
-
-
+   /**
+      Cleanup.
+   */
+   public void finalize() {
+      reader.finalize();
+   }
+   
+   
 }

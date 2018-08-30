@@ -1,4 +1,4 @@
-// Stefanie Wiltrud Kessler, September 2009 - April 2010
+// Stefanie Wiltrud Kessler, September 2009 - July 2010
 // Project SUKRE
 // This software is licensed under the terms of a BSD license.
 
@@ -6,9 +6,10 @@ package coalda.data;
 
 
 /**
-@author kesslewd
 
 Reads a matrix, a vector or several lines from a source.
+
+@author kesslewd
 
 */
 public abstract class Reader {
@@ -19,12 +20,34 @@ public abstract class Reader {
       Will determine if it is a matrix, a vector
       or lines that can be loaded.
    */
-   enum InformationType
+   enum MatrixInfo
       {
-         nodes, edges, umatrix, bmus, codebook, fvids, // from calculation
-         labels
+         nodes, edges, umatrix, codebook, // matrices from calculations table 
       }
 
+
+   /**
+      Type of information to be loaded.
+      Will determine if it is a matrix, a vector
+      or lines that can be loaded.
+   */
+   enum VectorInfo
+      {
+         bmus, fvids, // vectors from calculations table
+      }
+
+   /**
+      Type of information to be loaded.
+      Will determine if it is a matrix, a vector
+      or lines that can be loaded.
+   */
+   enum SingleInfo
+      {
+         features, // lines from featurevectors table
+         labels, // lines from links table (join fvs)
+         text, // lines from a lot of tables
+         nextCalcID // line from sequence calculation_id
+      }
 
    /**
       ID of the calculation that is imported at the moment
@@ -33,26 +56,6 @@ public abstract class Reader {
 
 
    /**
-      Type of information that is imported at the moment
-   */
-   protected InformationType infoType;
-
-
-   /**
-      Method readMatrix.
-      Reads a matrix of data.
-      Afterwards use nextRow to position
-      the cursor on the first row.
-      Then use nextValue to get the first value.
-      Type of information must have been set previously.
-   */
-   public void readMatrix () {
-      readMatrix(infoType);
-   }
-
-
-   /**
-      Method readMatrix.
       Reads a matrix of data.
       Afterwards use nextRow to position
       the cursor on the first row.
@@ -60,57 +63,30 @@ public abstract class Reader {
       
       @param type Type of information to read.
    */
-   public abstract void readMatrix (InformationType type);
+   public abstract void readMatrix (MatrixInfo type);
 
 
    /**
-      Method readVector.
-      Reads a vector of data.
-      After reading use nextValue to get the first value.
-      Type of information must have been set previously.
-   */
-   public void readVector () {
-      readVector(infoType);
-   }
-
-
-   /**
-      Method readVector.
       Reads a vector of data.
       After reading use nextValue to get the first value.
       Type of information must have been set previously.
       
       @param type Type of information to read.
    */
-   public abstract void readVector (InformationType type);
+   public abstract void readVector (VectorInfo type);
 
 
    /**
-      Method readCompleteVector.
-      Reads a vector of data and returns it in an array.
-      Type of information must have been set previously.
-      
-      @return Array containing single values of the vector.
-   */
-   public  String[] readCompleteVector () {
-      return readCompleteVector(infoType);
-   }
-
-
-   /**
-      Method readCompleteVector.
       Reads a vector of data and returns it in an array.
       
       @param type Type of information to read.
       @return Array containing single values of the vector.
    */
-   public abstract String[] readCompleteVector (InformationType type);
+   public abstract String[] readCompleteVector (VectorInfo type);
 
 
    /**
-      Method hasNextRow.
-      Checks if the matrix currently being read
-      has a next row.
+      Checks if the matrix currently being read has a next row.
       
       @return True if there is another row, else false.
    */
@@ -118,7 +94,6 @@ public abstract class Reader {
 
 
    /**
-      Method nextRow.
       Returns the next row of the matrix
       currently being read as a String.
       If there is no next row, null is returned.
@@ -129,7 +104,6 @@ public abstract class Reader {
 
 
    /**
-      Method hasNextValue.
       Checks if the vector or the current row of the matrix
       currently being read has a next value.
       
@@ -139,7 +113,6 @@ public abstract class Reader {
 
 
    /**
-      Method nextValue.
       Returns the next value of the vector or the current row of the matrix
       currently being read as a String.
       If there is no next value, null is returned.
@@ -150,7 +123,6 @@ public abstract class Reader {
 
 
    /**
-      Method numberOfValues.
       Returns the number of values in the current row of the matrix
       or in the vector currently being read.
       Will return 0 in case of error.
@@ -161,7 +133,6 @@ public abstract class Reader {
 
 
    /**
-      Method setCalcID.
       Sets the current calculation ID.
       
       @param calculationID A valid calculation ID.
@@ -172,47 +143,28 @@ public abstract class Reader {
 
 
    /**
-      Method setInformationType.
-      Sets the information type that currently should
-      be read.
+      Reads and returns one line of data.
+      What data depends on the type of SingleInfo.
+      nextCalcID : the next calculation ID that is not used.
+      other: null
       
-      @param type Information type.
+      @param type Type of information to read.
+      @return String with the information read.
    */
-   public void setInformationType(InformationType type) {
-      infoType = type;
-   }
+   public abstract String readOneLine(SingleInfo type); 
 
 
    /**
-      Method readLines.
-      Reads lines of data that fit the given condition.
-      After reading use nextLine to get the first line.
-      Type of information must have been set previously.
-      
-      @param fields Columns of the data to be read.
-      @param condition Condition returned lines must fulfill.
-   */
-   public void readLines (String fields, String condition) {
-      readLines(infoType, fields, condition);
-   }
-
-
-   /**
-      Method readLines.
-      Reads lines of data that fit the given condition.
+      Reads lines of data for the given feature vectors.
       After reading use nextLine to get the first line.
       
       @param type Type of information to read.
-      @param fields Columns of the data to be read.
-      @param condition Condition returned lines must fulfill.
+      @param featureVectors Which IDs to select.
    */
-   public abstract void readLines
-         (InformationType type, String fields, String condition);
-
+   public abstract void readLines (SingleInfo type, String featureVectors);
 
 
    /**
-      Method hasNextLine.
       Checks if the data currently being read has a next line.
       
       @return True if there is another line, else false.
@@ -221,18 +173,31 @@ public abstract class Reader {
 
 
    /**
-      Method nextLine.
       Returns the next line of the data
       currently being read as a String.
       If there is no next line, null is returned.
+      Depending on the SingleInfo Type read,
+      the following information is returned.
+      features: row with 2 columns
+         row[0] : feature vector ID
+         row[1] : features of this vector
+      labels: row with 2 columns
+         row[0] : feature vector ID
+         row[1] : label of this feature vector
+      text: row with 4 columns
+         row[0] : feature vector ID
+         row[1] : markable 1 of the link
+         row[2] : markable 2 of the link
+         row[3] : sentences between the two markables
+      other: the information returned by 'readOneLine'
+         as row[0]
       
-      @return Next row of line as String.
+      @return Next row as String array.
    */
    public abstract String[] nextLine();
 
 
    /**
-      Method finalize.
       Gives subclasses the opportunity to clean up
       when the object is no longer needed, e.g.
       close streams or database connections,

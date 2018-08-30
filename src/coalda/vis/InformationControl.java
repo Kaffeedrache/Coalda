@@ -1,11 +1,14 @@
-// Stefanie Wiltrud Kessler, September 2009 - April 2010
+// Stefanie Wiltrud Kessler, September 2009 - July 2010
 // Project SUKRE
 // This software is licensed under the terms of a BSD license.
 
 package coalda.vis;
 
 
+import java.util.Vector;
+
 import coalda.base.Constants;
+import coalda.data.FVImport;
 
 import prefuse.controls.FocusControl;
 import prefuse.visual.VisualItem;
@@ -17,11 +20,11 @@ import de.unistuttgart.ais.sukre.refinery.textvis.ui.TextModelComponent;
 
 
 /**
-@author kesslewd
 
 Dispays information about a node, the associated feature vectors
 and the text, when a user clicks on a node.
 
+@author kesslewd
 */
 public class InformationControl extends FocusControl {
 
@@ -43,7 +46,7 @@ public class InformationControl extends FocusControl {
 
 
    /**
-      Constructor.
+      Constructor with number of clicks and places to display information.
       @param clicks Number of Clicks to trigger action.
       @param nodeInformationTA TextArea where the information about the clicked node is dispayed.
       @param textVisualizationComponent Component for displaying feature vectors and associated text.
@@ -56,7 +59,6 @@ public class InformationControl extends FocusControl {
 
 
    /**
-      Method itemClicked.
       Called when a user clicks on an item.
       @param item The visual Item the user has clicked on.
       @param e Mouse event that triggered the call.
@@ -86,7 +88,6 @@ public class InformationControl extends FocusControl {
 
 
    /**
-      Method nodeClickedTa1.
       Called when a user clicks on a node, modifies text area.
       Displays information about the node.
       @param item The visual Item (node) the user has clicked on.
@@ -112,14 +113,22 @@ public class InformationControl extends FocusControl {
       if ( item.canGetString(Constants.nodeUmatValue) ) {
          ta.append("U-Matrix Value: " + item.getString(Constants.nodeUmatValue) + newline);
       }
-      if ( item.canGetString(Constants.nodeProportion) ) {
-         ta.append("% Coreferent/Total: " + item.getString(Constants.nodeProportion) + newline);
-      }
-      if ( item.canGetString(Constants.nodeProportionDis) ) {
-         ta.append("% Disreferent/Total: " + item.getString(Constants.nodeProportionDis) + newline);
-      }
+      
+      // Print labeled fvs
       if ( item.canGetString(Constants.nodeCoDisLabel) ) {
-         ta.append("Coreferent/Disreferent: " + item.getString(Constants.nodeCoDisLabel) + newline);
+         ta.append("All labeled: " + item.getString(Constants.nodeCoDisLabel) + newline);
+      }
+      for (int k=0; k<Constants.possibleLabels.length; k++) {
+         String name = Constants.possibleLabels[k];
+         if ( item.canGetString(Constants.nodeLabel + name) ) {
+            ta.append("Labeled as " + name + ": " + item.getString(Constants.nodeLabel + name) + newline);
+         }
+      }
+      for (int k=0; k<Constants.possibleLabels.length; k++) {
+         String name = Constants.possibleLabels[k];
+         if ( item.canGetString(Constants.nodeLabel + name) ) {
+            ta.append("% " + name + "/total: " + item.getString(Constants.nodeProportion + name) + newline);
+         }
       }
       
       // Print weights of nodes
@@ -134,11 +143,37 @@ public class InformationControl extends FocusControl {
          String fvs = item.getString(Constants.nodeFVectors);
          ta.append("Assigned Feature Vectors: " + fvs + newline);
       }
+      
+// TEST
+/*      // Print associated feature vectors
+      //System.out.println("Here comes the test");
+      if ( item.canGetString(Constants.nodeFVectors) ) {
+         String fvs = item.getString(Constants.nodeFVectors);
+         //System.out.println("vectors: " + fvs);
+         FVImport fvimport = new FVImport();
+         Vector<String> bla = fvimport.getFVsOfMU(fvs);
+         //System.out.println("Features: " + bla.size());
+                for (int j=0; j<bla.size(); j++) {
+                      ta.append(bla.get(j) + newline);
+                    //  System.out.println(bla.get(j));
+             }
+                            // Print text
+      // System.out.println("Now try the text");
+       Vector<String> bla2 = fvimport.getTextOfMU(fvs);
+      // System.out.println("FeatureVs: " + bla2.size());
+                 for ( int k=0; k<bla2.size(); k++ ) {
+                 
+                    ta.append(bla2.get(k) + newline);
+              //      System.out.println(bla2.get(k));
+           }
+               
+      }*/
+// TEST END
+      
    }
 
 
    /**
-      Method nodeClickedTextVis.
       Called when a user clicks on a node, modifies text component.
       Displays feature vectors and text.
       @param item The visual Item (node) the user has clicked on.
@@ -157,7 +192,6 @@ public class InformationControl extends FocusControl {
 
 
    /**
-      Method edgeClickedTa1.
       Called when a user clicks on an edge, modifies text area.
       Displays information about the edge.
       @param item The visual Item (edge) the user has clicked on.

@@ -53,13 +53,6 @@ public class SelectionControl implements TupleSetListener {
           ((VisualItem)rem[i]).setHighlighted(false);
       }
 
-      // If we would have an empty tuple set that would be bad,
-      // so we just add one and make it not highlighted
-      if ( ts.getTupleCount() == 0 ) {
-          ts.addTuple(rem[0]);
-          ((VisualItem)rem[0]).setHighlighted(false);
-      }
-
       // Get selected display
       Component component = tab.getSelectedComponent();
       if (component instanceof SOMDisplay) {

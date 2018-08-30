@@ -1,4 +1,4 @@
-// Stefanie Wiltrud Kessler, September 2009 - April 2010
+// Stefanie Wiltrud Kessler, September 2009 - July 2010
 // Project SUKRE
 // This software is licensed under the terms of a BSD license.
 
@@ -12,12 +12,12 @@ import prefuse.data.Table;
 
 
 /**
-@author kesslewd
 
 Class that reads the result of a calculation with matlab and imports them
 into prefuse data structures. Relies on a @link{CalculationAccess} object to
 import the data.
 
+@author kesslewd
 */
 public class CalculationImport {
 
@@ -29,17 +29,22 @@ public class CalculationImport {
    */
    private CalculationAccess calcAccess;
 
+   /**
+      This object calculates additional information
+      to enhance the visualization.
+   */
+   private CalculationEnhancer calcEnhancer;
 
    /**
       Constructor.
    */
    public CalculationImport () {
       calcAccess = new CalculationAccess();
+      calcEnhancer = new CalculationEnhancer();
    }
 
 
    /**
-      Method readNodes.
       Reads the nodes of the SOM (the map units) 
       with their X and Y value into a new table.
       Names/Type of the columns added: 
@@ -60,7 +65,6 @@ public class CalculationImport {
 
 
    /**
-      Method readEdges.
       Reads the neighbourhood relations of the SOM
       and converts them into a table of edges.
       Names/Type of the columns added: 
@@ -79,7 +83,6 @@ public class CalculationImport {
 
 
    /**
-      Method readAll.
       Gets all the information about nodes and edges
       and puts it all together into a graph.
       All information means:
@@ -100,24 +103,37 @@ public class CalculationImport {
       Graph graph = new Graph();
       try {
          // import nodes
-         System.out.println("Importing nodes...");
-         Table tableNodes = readNodes();
-         System.out.println("... done importing nodes.");
+         System.out.println("Importing nodes and codebook...");
+         //Table tableNodes = readNodes(); // old
+         //calcAccess.readCodebook(tableNodes); // old
+         Table tableNodes = calcAccess.readCodebook();
+         System.out.println("... done importing nodes and codebook.");
 
          // import edges
          System.out.println("Importing edges...");
          Table tableEdges = readEdges();
          System.out.println("... done importing edges.");
 
-         // import U-Matrix values
-         System.out.println("Importing U-Matrix...");
+         // calculate U-Matrix values
+         System.out.println("Calculating node coordinates...");
          try {
-            calcAccess.readUmatrix(tableNodes, tableEdges);
+            calcEnhancer.calculateNodes(tableNodes, tableEdges);
          } catch (Exception e) {
-            System.out.println("Error while importing U-Matrix.");
+            System.out.println("Error while calculating node coordinates.");
             e.printStackTrace();
          }
-         System.out.println("... done importing U-Matrix.");
+         System.out.println("... done calculating node coordinates.");
+         
+         // calculate U-Matrix values
+         System.out.println("Calculating U-Matrix...");
+         try {
+            //calcAccess.readUmatrix(tableNodes, tableEdges); // old
+            calcEnhancer.calculateUmatrix(tableNodes, tableEdges);
+         } catch (Exception e) {
+            System.out.println("Error while calculating U-Matrix.");
+            e.printStackTrace();
+         }
+         System.out.println("... done calculating U-Matrix.");
 
          // import BMUs (Best Matching Units)
          System.out.println("Importing Best Matching Units...");
@@ -129,20 +145,10 @@ public class CalculationImport {
          }
          System.out.println("... done importing Best Matching Units.");
 
-         // import Codebook
-         System.out.println("Importing codebook...");
-         try {
-            calcAccess.readCodebook(tableNodes);
-         } catch (Exception e) {
-            System.out.println("Error while importing Codebook.");
-            e.printStackTrace();
-         }
-         System.out.println("... done importing codebook.");
-
          // calculate proportion of coreferent fvs per node
          System.out.println("Calculate proportions...");
          try {
-            calcAccess.getProportions(tableNodes);
+            //calcEnhancer.getProportions(tableNodes);
          } catch (Exception e) {
             System.out.println("Error while calculing proportions.");
             e.printStackTrace();
@@ -160,6 +166,8 @@ public class CalculationImport {
          System.out.println("Empty graph is returned.");
          e.printStackTrace();
       }
+      
+      calcAccess.finalize();
 
       return graph;
    }

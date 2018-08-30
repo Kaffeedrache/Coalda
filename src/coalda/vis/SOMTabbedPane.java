@@ -1,4 +1,4 @@
-// Stefanie Wiltrud Kessler, September 2009 - April 2010
+// Stefanie Wiltrud Kessler, September 2009 - July 2010
 //Project SUKRE
 //This software is licensed under the terms of a BSD license.
 
@@ -6,6 +6,7 @@ package coalda.vis;
 
 
 import coalda.base.Constants;
+import coalda.base.Utils;
 import coalda.data.CalculationImport;
 import coalda.learner.Learner;
 
@@ -15,6 +16,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.geom.Rectangle2D;
+import java.util.Iterator;
 
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
@@ -44,12 +46,14 @@ import prefuse.util.ui.UILib;
 import prefuse.visual.VisualItem;
 import prefuse.visual.expression.VisiblePredicate;
 
+import prefuse.action.layout.graph.ForceDirectedLayout;
+import prefuse.action.RepaintAction;
 
 /**
-@author kesslewd
 
 Tabbed pane, each tab holds a SOMDisplay.
 
+@author kesslewd
 */
 public class SOMTabbedPane extends JTabbedPane {
 
@@ -85,7 +89,8 @@ public class SOMTabbedPane extends JTabbedPane {
    /**
       Import of calculation data.
    */
-   private CalculationImport dataImport = new CalculationImport();
+   //private CalculationImport dataImport = new CalculationImport();
+   // no field because of threading problems with simpleORM
 
    /**
       Field for coloring the nodes.
@@ -97,6 +102,10 @@ public class SOMTabbedPane extends JTabbedPane {
    */
    private String currentLabelField;
 
+   /**
+      Layout of the graph.
+   */
+   private String currentLayout;
 
    /**
       Action List for coloring the SOM.
@@ -121,7 +130,7 @@ public class SOMTabbedPane extends JTabbedPane {
    /**
       Palette for the colors of nodes.
    */
-   private int[] palette = new int[] {
+   private int[] palette = new int[] { //TODO change the colors.
       ColorLib.rgb(0,0,255), // red
       ColorLib.rgb(0,100,128), // brown
       ColorLib.rgb(0,200,0), // green
@@ -138,9 +147,10 @@ public class SOMTabbedPane extends JTabbedPane {
    */
    public SOMTabbedPane () {
       super();
-      // Set current color and label field to default.
+      // Set current color, label field and layout to default.
       currentColorField = Constants.possibleNodeColorings[0];
       currentLabelField = Constants.possibleNodeLabels[0];
+      currentLayout = Constants.possibleLayouts[0];
 
       // Create actions to be added to the displays
       createActions();
@@ -162,7 +172,33 @@ public class SOMTabbedPane extends JTabbedPane {
 
 
    /**
-      Method createActions.
+      Selects a layout and adds it to the action list layout.
+   */
+   private void selectLayout (String layoutMethod) {
+
+      // Force-directed layout
+      // Spring lenght is based on U-matrix value
+      if (layoutMethod.equals(Constants.layoutForce)) {
+         ForceDirectedLayout fdl = new UmatLayout("graph");
+         layout.add(fdl);
+         layout.add(new RepaintAction());
+      }
+
+      // Grid layout according to X/Y-values of nodes
+      if (layoutMethod.equals(Constants.layoutGrid)) {
+         AxisLayout x_axis = new AxisLayout("graph.nodes", Constants.nodeXValue, 
+               prefuse.Constants.X_AXIS, VisiblePredicate.TRUE);
+         AxisLayout y_axis = new AxisLayout("graph.nodes", Constants.nodeYValue, 
+               prefuse.Constants.Y_AXIS, VisiblePredicate.TRUE);
+         layout.add(x_axis);
+         layout.add(y_axis);
+      }
+
+      // If the parameter is none of the possible layouts, ignore
+   }
+
+
+   /**
       Creates the action lists that are added to the displays.
       Action lists influence, colors, shapes, sizes and layout.
       Called by the constructors.
@@ -218,14 +254,7 @@ public class SOMTabbedPane extends JTabbedPane {
 
       // Layout
       layout = new ActionList();
-
-      AxisLayout x_axis = new AxisLayout("graph.nodes", Constants.nodeXValue, 
-            prefuse.Constants.X_AXIS, VisiblePredicate.TRUE);
-      AxisLayout y_axis = new AxisLayout("graph.nodes", Constants.nodeYValue, 
-            prefuse.Constants.Y_AXIS, VisiblePredicate.TRUE);
-
-      layout.add(x_axis);
-      layout.add(y_axis);
+      selectLayout(currentLayout);
 
    }
 
@@ -234,7 +263,6 @@ public class SOMTabbedPane extends JTabbedPane {
 
 
    /**
-      Method addSOMConfig.
       Adds a SOM configuration to the learner.
       @param somconf 
    */
@@ -244,7 +272,6 @@ public class SOMTabbedPane extends JTabbedPane {
 
 
    /**
-      Method setComponentSize.
       Set the size of the displays in the tabs. Used for layout.
       @param tabComponentsSize Size of displays in tabs.
    */
@@ -254,7 +281,6 @@ public class SOMTabbedPane extends JTabbedPane {
 
 
    /**
-      Method setTAFeaturesMU.
       Set the text area used to print information about the nodes.
       @param textArea Text Area.
    */
@@ -264,7 +290,6 @@ public class SOMTabbedPane extends JTabbedPane {
 
 
    /**
-      Method setTextVisualization.
       Set the component used to print information about 
       the feature vectors and the text.
       @param tmc Text Model Component.
@@ -274,9 +299,8 @@ public class SOMTabbedPane extends JTabbedPane {
    }
 
 
-   //  java.lang.IllegalArgumentException: Unknown column name: Weight26
+   // TODO java.lang.IllegalArgumentException: Unknown column name: Weight26
    /**
-      Method recolor.
       Recolors all nodes of the given display
       according to the values of the given field.
       @param display The display that contains the visualization to recolor.
@@ -304,7 +328,6 @@ public class SOMTabbedPane extends JTabbedPane {
 
 
    /**
-      Method relabel.
       Relabels all nodes of the given display
       with the value of the given field.
       @param display The display that contains the visualization to relabel.
@@ -325,12 +348,27 @@ public class SOMTabbedPane extends JTabbedPane {
       display.repaint();
    }
 
+  /**
+      Recolors all nodes of the given display
+      according to the values of the given field.
+      @param display The display that contains the visualization to layout.
+      @param field The field to be used to recolor.
+   */
+   public void relayout (SOMDisplay display, String layoutMethod) {
+
+      // Select layout and add to actionList layout
+      selectLayout(layoutMethod);
+
+      // Do the new layout
+      display.relayout(layout);
+      display.repaint();
+   }
+
 
    // -------------- ADD SOM DISPLAY --------------
 
 
    /**
-      Method addSOMDisplay.
       Adds a display to the tabbed pane in a new tab.
       This display contains a new calculation done with the feature
       vectors given as a parameter.
@@ -339,21 +377,28 @@ public class SOMTabbedPane extends JTabbedPane {
    */
    public void addSOMDisplay (String featureVectorIDs, String nodeNumber) {
       // Used in zoom
+      // Sort fvs
+      System.out.println(featureVectorIDs);
+      String fvs = Utils.sortFVs(featureVectorIDs);
+      System.out.println(fvs);
       // Calculate new SOM for the given feature vectors
-      int calcID = learner.calculateForFVs(featureVectorIDs);
+      int calcID = learner.calculateForFVs(fvs);
+      // Add display
       addSOMDisplay(calcID);
    }
 
 
    /**
-      Method addSOMDisplay.
       Adds a display to the tabbed pane in a new tab.
       The display contains the graph of the calculation
       given by the ID.
       @param calculationID ID of the calculation to load.
    */
    public void addSOMDisplay (int calculationID) {
-      Graph graph = dataImport.readAll(calculationID);  
+      // Import data
+      CalculationImport dataImport = new CalculationImport();
+      Graph graph = dataImport.readAll(calculationID);
+      // If the graph is not empty, add display
       if ((graph != null) && (graph.getNodeCount() != 0)) {
          SOMDisplay d = new SOMDisplay(graph, currentLabelField, calculationID);
          addSOMDisplay(d, calculationID);
@@ -362,7 +407,6 @@ public class SOMTabbedPane extends JTabbedPane {
 
 
    /**
-      Method addSOMDisplay.
       Adds this display to the tabbed pane in a new tab.
       The title of this display will always show 0 as calculation ID!
       Better use addSOMDisplay (int calculationID) or
@@ -376,7 +420,6 @@ public class SOMTabbedPane extends JTabbedPane {
 
 
    /**
-      Method addSOMDisplay.
       Adds a display to the tabbed pane in the first tab.
       The display contains a calculation with all feature
       vectors in the database.
@@ -388,7 +431,6 @@ public class SOMTabbedPane extends JTabbedPane {
 
 
    /**
-      Method addSOMDisplay.
       Adds a display to the tabbed pane in a new tab.
       @param display The display to be added.
       @param calculationID ID of the calculation to load.
@@ -398,27 +440,52 @@ public class SOMTabbedPane extends JTabbedPane {
       // Add tab with new display
       add("Calculation " + calculationID, display);
 
+      // Set initial coordinates for force-directed layout
+      Visualization vis = display.getVisualization();
+      Iterator iter = vis.visibleItems("graph.nodes");
+      while ( iter.hasNext() ) {
+          VisualItem item = (VisualItem)iter.next();
+          double x = item.getFloat(Constants.nodeXValue);
+          double y = item.getFloat(Constants.nodeYValue);
+          item.setEndX(x);
+          item.setEndY(y);
+      }
+      
       // Add action lists to display
       display.addActionList(SOMDisplay.colorGroup, color);
       display.addActionList(SOMDisplay.layoutGroup, layout);
       display.addActionList(SOMDisplay.shapeGroup, shape);
       display.addActionList(SOMDisplay.recolorGroup, recolor);
 
-      // Add control listeners
-
-      display.addControlListener(new WheelTwoLevelZoomControl(this)); // zoom with mouse wheel
+      // Add control listeners - standard controls
       display.addControlListener(new ZoomToFitControl()); // Fit visualization to display
       display.addControlListener(new PanControl()); // Drag visualization around
       ToolTipControl ttc = new ToolTipControl // Tooltips
-            (new String[] {Constants.nodeKey, Constants.nodeFVNumber, Constants.edgeKey, Constants.edgeUmatValue});
+            (new String[] {Constants.nodeKey, Constants.nodeFVNumber, Constants.nodeUmatValue, Constants.edgeKey, Constants.edgeUmatValue});
       display.addControlListener(ttc);
-      FocusControl fc = new InformationControl(1, featuresMU, textVisualization); // Display things on clic
-      display.addControlListener(fc);
-      FocusControl labeler = new LabelControl(2); // Display things on doubleclic
-      display.addControlListener(labeler);
-      TupleSet focusGroup = display.getVisualization().getGroup(Visualization.FOCUS_ITEMS); 
-      focusGroup.addTupleSetListener(new SelectionControl(this)); // highlight selected items
+      
+      // New controls
 
+      // Two-level zoom with mouse wheel
+      display.addControlListener(new WheelTwoLevelZoomControl(this)); 
+      
+      // Display things on clic
+      FocusControl fc = new InformationControl(1, featuresMU, textVisualization); 
+      display.addControlListener(fc);
+      
+      // Label nodes on doubleclic
+      FocusControl labeler = new LabelControl(2); 
+      display.addControlListener(labeler);
+      
+      // Highlight selected items
+      TupleSet focusGroup = display.getVisualization().getGroup(Visualization.FOCUS_ITEMS); 
+      focusGroup.addTupleSetListener(new SelectionControl(this)); 
+      
+      // Select several nodes - test
+      RectangleSelectionControl rsc = new RectangleSelectionControl();
+      //display.addPaintListener(rsc);
+      display.addControlListener(rsc);
+      
       // Zoom to fit
       int width = (int)componentSize.getWidth();
       int height = (int)componentSize.getHeight();
@@ -445,7 +512,6 @@ public class SOMTabbedPane extends JTabbedPane {
 
 
    /**
-      MouseListener buttonMouseListener
       Closes the current tab if its tabselector is clicked with the right mouse button.
    */
    private final static MouseListener buttonMouseListener = new MouseAdapter() {

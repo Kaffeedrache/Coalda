@@ -1,4 +1,4 @@
-// Stefanie Wiltrud Kessler, September 2009 - April 2010
+// Stefanie Wiltrud Kessler, September 2009 - July 2010
 // Project SUKRE
 // This software is licensed under the terms of a BSD license.
 
@@ -20,10 +20,10 @@ import prefuse.util.collections.IntIterator;
 
 
 /**
-@author kesslewd
 
 Exports a SOM to a text file.
 
+@author kesslewd
 */
 public class MapExporter {
    
@@ -64,7 +64,6 @@ public class MapExporter {
 
 
    /**
-      Method readAll.
       Gets all the information about nodes and edges
       and puts it all together into a graph.
       All information means:
@@ -126,7 +125,7 @@ public class MapExporter {
          // calculate proportion of coreferent fvs per node
          System.out.println("Calculate proportions...");
          try {
-            calcAccess.getProportions(tableNodes);
+            //calcAccess.getProportions(tableNodes);
          } catch (Exception e) {
             System.out.println("Error while calculing proportions.");
             e.printStackTrace();
@@ -141,7 +140,6 @@ public class MapExporter {
 
 
    /**
-      Method exportToTextFile.
       Exports the information about the SOM to a textfile.
       Format is:
       MU number: <nodeID>
@@ -181,14 +179,22 @@ public class MapExporter {
             if ( tableNodes.canGetString(Constants.nodeUmatValue) ) {
                out.write("U-Matrix Value: " + tableNodes.getString(nodeKey, Constants.nodeUmatValue) + newline);
             }
-            if ( tableNodes.canGetString(Constants.nodeProportion) ) {
-               out.write("% Coreferent/Total: " + tableNodes.getString(nodeKey, Constants.nodeProportion) + newline);
-            }
-            if ( tableNodes.canGetString(Constants.nodeProportionDis) ) {
-               out.write("% Disreferent/Total: " + tableNodes.getString(nodeKey, Constants.nodeProportionDis) + newline);
-            }
+
+            // Print labeled fvs
             if ( tableNodes.canGetString(Constants.nodeCoDisLabel) ) {
-               out.write("Coreferent/Disreferent: " + tableNodes.getString(nodeKey, Constants.nodeCoDisLabel) + newline);
+               out.write("All labeled: " + tableNodes.getString(nodeKey, Constants.nodeCoDisLabel) + newline);
+            }
+            for (int k=0; k<Constants.possibleLabels.length; k++) {
+               String name = Constants.possibleLabels[k];
+                if ( tableNodes.canGetString(Constants.nodeLabel + name) ) {
+                  out.write("Labeled as " + name + ": " + tableNodes.getString(nodeKey, Constants.nodeLabel + name) + newline);
+               }
+            }
+            for (int k=0; k<Constants.possibleLabels.length; k++) {
+               String name = Constants.possibleLabels[k];
+               if ( tableNodes.canGetString(Constants.nodeLabel + name) ) {
+                  out.write("% " + name + "/total: " + tableNodes.getString(nodeKey, Constants.nodeProportion + name) + newline);
+                }
             }
             // Weights
             int i=1;
@@ -214,11 +220,11 @@ public class MapExporter {
                } 
 
                // Write text associated with feature vectors
-               String[] result2 = importData.getTextOfMU(fvs);
+               Vector<String> result2 = importData.getTextOfMU(fvs);
                int id = 0;
-               for ( int k=0; k<result2.length; k++ ) {
-                  if (result2[k] != null) {
-                     if (isNumber(result2[k])) {
+               for ( int k=0; k<result2.size(); k++ ) {
+                  if (result2.get(k) != null) {
+                     if (isNumber(result2.get(k))) {
                         out.newLine();
                         out.write("FV ID : ");
                         id = 0;
@@ -228,7 +234,7 @@ public class MapExporter {
                      } else if (id == 2) {
                         out.write("Markable 2: ");
                      }
-                     out.write(result2[k] + newline);
+                     out.write(result2.get(k) + newline);
                      id++;
                   }
                }
@@ -252,7 +258,6 @@ public class MapExporter {
 
 
    /**
-      Method isNumber.
       Checks if a String consists ONLY of numbers.
       Empty String will return true.
       @param text The String to check.

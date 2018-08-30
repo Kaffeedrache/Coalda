@@ -1,4 +1,4 @@
-// Stefanie Wiltrud Kessler, September 2009 - April 2010
+// Stefanie Wiltrud Kessler, September 2009 - July 2010
 // Project SUKRE
 // This software is licensed under the terms of a BSD license.
 
@@ -11,6 +11,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.io.FileReader;
+import java.util.Properties;
 import java.util.Vector;
 
 import javax.swing.BorderFactory;
@@ -18,6 +20,7 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -32,15 +35,14 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 
 import net.miginfocom.swing.MigLayout;
-
 import coalda.base.Constants;
 import coalda.data.FVImport;
 import coalda.data.SOMConfigurationListener;
-import coalda.data.export.MapExporter;
 import coalda.data.evaluation.SOMEvaluator;
+import coalda.data.evaluation.SOMEvaluator.ResultEV;
+import coalda.data.export.MapExporter;
 import coalda.vis.SOMDisplay;
 import coalda.vis.SOMTabbedPane;
-
 import de.unistuttgart.ais.sukre.refinery.network.model.SOMCalculationModel;
 import de.unistuttgart.ais.sukre.refinery.network.ui.SOMConfigurationComponent;
 import de.unistuttgart.ais.sukre.refinery.network.ui.SOMConfigurationManagementComponent;
@@ -55,23 +57,23 @@ import de.unistuttgart.ais.sukre.somserver.matlab.calculation.SOMConfiguration.N
 
 /**
 
+
+Usage: coaldaVis [<calcID> [evaluate | export <file>]
+
+Possible command line arguments:
+calculationID: loads the calculation with this ID on startup.
+evaluate: Evaluates the calculation with the ID in the first parameter
+   and prints the result on the command line.
+   Exits without starting the visualization.
+export: Exports the calculation with with the ID in the first parameter
+   to the file is the third parameter.
+   Exits without starting the visualization.
+   
+Starting coaldaVis without any command line parameters will
+start the visualization with an empty screen. From there on you can
+use any of the above functions or calculate a new visualization.
+      
 @author kesslewd
-
-   Usage: coaldaVis [<calcID> [evaluate | export <file>]
-
-   Possible command line arguments:
-   calculationID: loads the calculation with this ID on startup.
-   evaluate: Evaluates the calculation with the ID in the first parameter
-      and prints the result on the command line.
-      Exits without starting the visualization.
-   export: Exports the calculation with with the ID in the first parameter
-      to the file is the third parameter.
-      Exits without starting the visualization.
-      
-   Starting coaldaVis without any command line parameters will
-   start the visualization with an empty screen. From there on you can
-   use any of the above functions or calculate a new visualization.
-      
 */
 public class CoaldaVis {
 
@@ -110,18 +112,13 @@ public class CoaldaVis {
    /**
       Model for SOM used for calculations
    */
-   private static SOMCalculationModel SOMmodel = new SOMCalculationModel();
+   private static SOMCalculationModel SOMmodel;
 
    /**
       Do we have to calculate the SOM
       for all fvs or only for those of selected nodes.
    */
    private static boolean[] selectedFeatures;
-
-   /**
-      Last FV ID in the database at startup.
-   */
-   private static int originalLastFVID;
 
    /**
       Total size of the Window.
@@ -213,7 +210,19 @@ public class CoaldaVis {
       featuresMUScroll = new JScrollPane(featuresMU);
       tmc = new TextModelComponent();
 
+
       // -- Settings for the model -------------------------
+
+      // Set properties-file to use for model
+      Properties connectionProps = new Properties();
+      try {
+         FileReader fr = new FileReader(Constants.configFile);
+         connectionProps.load(fr);
+         fr.close();
+      } catch (Exception e) {
+         // TODO: handle exception
+      }
+      SOMmodel = new SOMCalculationModel(connectionProps);
 
       // Get default config as starting point
       SOMConfiguration startConf = SOMmodel.getSomConfig();
@@ -225,12 +234,7 @@ public class CoaldaVis {
       // Set new config as the config to use
       SOMmodel.setSomConfig(startConf); 
 
-      // Get maximal feature vector ID in database
-      // (to know from where on we have to delete 
-      // if we create new feature vectors for recalculation)
-      originalLastFVID = fv.getMaxFVID();
-
-      somConfigListener = new SOMConfigurationListener(originalLastFVID, displayTab);
+      somConfigListener = new SOMConfigurationListener(displayTab);
       SOMmodel.addCalculationModelListener(somConfigListener);
 
 
@@ -301,9 +305,8 @@ public class CoaldaVis {
 
 
    /**
-   Method createPanel.
-   Creates the side pane.
-   @return The side pane.
+      Creates the side pane.
+      @return The side pane.
    */
    public static JPanel createPanel () {
 
@@ -407,6 +410,51 @@ public class CoaldaVis {
       // ---- Execution Component (below tabs) ----
       SOMExecutionComponent ex = new SOMExecutionComponent();
       ex.setCalculationModel(SOMmodel);
+      
+      
+
+      // ---- Recolor drop box (below tabs) ----
+      Box recolorBox = new Box(BoxLayout.PAGE_AXIS); // top-to-bottom
+      recolorBox.setBorder(BorderFactory.createTitledBorder("Re-color nodes"));
+      recolorBox.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+      int length = Constants.possibleNodeColorings.length;
+      int labels = Constants.possibleLabels.length;
+      String[] colorings = new String[length + noOfFeatures + labels + labels];
+      System.arraycopy(Constants.possibleNodeColorings, 0, colorings, 0, length);
+      int index = length;
+      // Weights
+      for (int k=1; k<=noOfFeatures;k++) {
+         colorings[index] = Constants.nodeWeight + k;
+         index++;
+      }
+      // Labels
+      for (int k=0; k<labels;k++) {
+         colorings[index] = Constants.nodeLabel + Constants.possibleLabels[k];
+         index++;
+      }
+      // Proportions
+      for (int k=0; k<labels;k++) {
+         colorings[index] = Constants.nodeProportion + Constants.possibleLabels[k];
+         index++;
+      }
+
+      JComboBox recolorDropBox = new JComboBox(colorings);
+      recolorBox.add(recolorDropBox);
+
+      recolorDropBox.addActionListener(new ActionListener() {
+         public void actionPerformed(ActionEvent e) {
+             JComboBox cb = (JComboBox)e.getSource();
+             String field = (String)cb.getSelectedItem();
+             SOMDisplay c = (SOMDisplay)displayTab.getSelectedComponent();
+             displayTab.recolor(c, field);
+         }
+      });
+
+      
+      
+      
+      
 
 
       // ---- Add everything to the panel ----
@@ -417,6 +465,7 @@ public class CoaldaVis {
       configTab.add("Features", featureBoxScroll);
       weights.add(configTab, "grow");
       weights.add(ex, "grow");
+      weights.add(recolorBox, "grow");
 
       return weights;
 
@@ -425,9 +474,8 @@ public class CoaldaVis {
 
 
    /**
-   Method createMenu.
-   Creates the menu bar.
-   @return The menu bar.
+      Creates the menu bar.
+      @return The menu bar.
    */
    public static JMenuBar createMenu () {
 
@@ -532,6 +580,23 @@ public class CoaldaVis {
          recolorGroup.add(rbMenuItem);
          rbMenuItem.addActionListener(recolorListener);
       }
+      // We can also color segun labels for features
+      noOfFeatures = Constants.possibleLabels.length;
+      for (int k=0; k<noOfFeatures;k++) {
+         JRadioButtonMenuItem rbMenuItem = 
+               new JRadioButtonMenuItem(Constants.nodeLabel + Constants.possibleLabels[k]);
+         recolorMenu.add(rbMenuItem);
+         recolorGroup.add(rbMenuItem);
+         rbMenuItem.addActionListener(recolorListener);
+      }
+      // We can also color segun proportions for features
+      for (int k=0; k<noOfFeatures;k++) {
+         JRadioButtonMenuItem rbMenuItem = 
+               new JRadioButtonMenuItem(Constants.nodeProportion + Constants.possibleLabels[k]);
+         recolorMenu.add(rbMenuItem);
+         recolorGroup.add(rbMenuItem);
+         rbMenuItem.addActionListener(recolorListener);
+      }
 
 
       // === Menu Relabel  ===
@@ -564,6 +629,36 @@ public class CoaldaVis {
       }
 
 
+      // === Menu Layout  ===
+      // Change layout method
+      JMenu layoutMenu = new JMenu("Layout");
+      menuBar.add(layoutMenu);
+      ButtonGroup layoutGroup = new ButtonGroup();
+
+      // Listener gets name of selected field and relabels
+      ActionListener layoutListener = new ActionListener() {
+         public void actionPerformed(ActionEvent e) {
+            JRadioButtonMenuItem cb = (JRadioButtonMenuItem)e.getSource();
+            String field = (String)cb.getText();
+            SOMDisplay c = (SOMDisplay)displayTab.getSelectedComponent();
+            displayTab.relayout(c, field);
+         }
+      };
+
+      // Get possible fields from Array
+      length = Constants.possibleLayouts.length;
+      for (int k=0; k<length;k++) {
+         JRadioButtonMenuItem rbMenuItem = new JRadioButtonMenuItem(Constants.possibleLayouts[k]);
+         layoutMenu.add(rbMenuItem);
+         layoutGroup.add(rbMenuItem);
+         rbMenuItem.addActionListener(layoutListener);
+         // Select first entry of array as default
+         if (k == 0) {
+            rbMenuItem.setSelected(true);
+         }
+      }
+
+
       // === Menu Evaluate ===
       // Evaluates a given calculation
       JMenu evalMenu = new JMenu("Evaluate");
@@ -582,7 +677,14 @@ public class CoaldaVis {
             try {
                int calculationID = Integer.parseInt(calculationIDString);
                SOMEvaluator evi = new SOMEvaluator();
-               evi.evaluate(calculationID);
+               ResultEV result = evi.evaluate(calculationID);
+               JOptionPane.showMessageDialog(displayTab,
+                     "Calculation ID " + calculationID + "\n"
+                     + "Precision: " + result.precision
+                     + "\nRecall: " + result.recall
+                     + "\nF-Measure: " + result.fmeasure,
+                     "Evaluation of Calculation ID " + calculationID,
+                     JOptionPane.INFORMATION_MESSAGE);
             } catch (NumberFormatException f) {
                System.out.println("CalcID must be an integer - number is ignored");
                JOptionPane.showMessageDialog(displayTab, "Not a valid calculation ID.");
@@ -592,37 +694,9 @@ public class CoaldaVis {
       evalMenu.add(evalButton);
 
 
-      // === Menu DB_Clear ===
-      // Deletes the entries from the database
-      // that we created while recalculating with
-      // different features.
-      JMenu dbClearMenu = new JMenu("DB");
-      menuBar.add(dbClearMenu);
-
-      JMenuItem dbClearButton = new JMenuItem("Clear database");
-      dbClearButton.addActionListener(new ActionListener() {
-         public void actionPerformed(ActionEvent e) {
-            System.out.println("Clear database of temporary fvs we created");
-            fv.deleteCreatedFVs();
-         }
-      });
-      dbClearMenu.add(dbClearButton);
-
-
       // We are ready
       return menuBar;
 
-   }
-
-
-
-   /**
-   Method finalize.
-   Clean up before we leave.
-   */
-   public void finalize () {
-      System.out.println("Clear database of temporary fvs we created");
-      fv.deleteCreatedFVs();
    }
 
 

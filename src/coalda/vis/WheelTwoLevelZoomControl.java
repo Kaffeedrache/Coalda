@@ -1,4 +1,4 @@
-// Stefanie Wiltrud Kessler, September 2009 - April 2010
+// Stefanie Wiltrud Kessler, September 2009 - July 2010
 // Project SUKRE
 // This software is licensed under the terms of a BSD license.
 
@@ -13,16 +13,16 @@ import prefuse.visual.VisualItem;
 
 
 /**
-@author kesslewd
 
 Implements zooming by mouse wheel.
 
+@author kesslewd
 */
 public class WheelTwoLevelZoomControl extends TwoLevelZoomControl {
 
 
    /**
-      Constructor.
+      Constructor with display it works on.
       @param displayPane The display tabbed pane this zoom works on.
    */
    public WheelTwoLevelZoomControl (SOMTabbedPane displayPane) {
@@ -31,7 +31,6 @@ public class WheelTwoLevelZoomControl extends TwoLevelZoomControl {
 
 
    /**
-      Method itemWheelMoved.
       Called when a user moves the mouse wheel on an item.
       @param item The visual Item the user has zoomed on.
       @param e MouseWheel event that triggered the call.
@@ -46,7 +45,6 @@ public class WheelTwoLevelZoomControl extends TwoLevelZoomControl {
 
 
    /**
-      Method mouseWheelMoved.
       Called when a user moves the mouse wheel not on an item.
       @param e MouseWheel event that triggered the call.
    */

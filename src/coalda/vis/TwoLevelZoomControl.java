@@ -1,4 +1,4 @@
-// Stefanie Wiltrud Kessler, September 2009 - April 2010
+// Stefanie Wiltrud Kessler, September 2009 - July 2010
 // Project SUKRE
 // This software is licensed under the terms of a BSD license.
 
@@ -14,7 +14,6 @@ import java.awt.geom.Point2D;
 
 
 /**
-@author kesslewd
 
 Implements a two-level zoom.
 Up until a given leven zoom is just normal zoom.
@@ -22,6 +21,7 @@ If a user zooms beyond this level on a node,
 a new SOM is calculated for the feature vectors
 of this node.
 
+@author kesslewd
 */
 public class TwoLevelZoomControl extends AbstractZoomControl {
 
@@ -58,7 +58,7 @@ public class TwoLevelZoomControl extends AbstractZoomControl {
 
 
    /**
-      Constructor.
+      Constructor with display it works on.
       @param displayPane The display tabbed pane this zoom works on.
    */
    public TwoLevelZoomControl (SOMTabbedPane displayPane) {
@@ -220,7 +220,7 @@ public class TwoLevelZoomControl extends AbstractZoomControl {
       // Repaint the dispay
       display.repaint();
 
-       return status;
+      return status;
    }
 
 

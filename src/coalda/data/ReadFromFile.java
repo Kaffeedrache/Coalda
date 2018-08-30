@@ -1,4 +1,4 @@
-// Stefanie Wiltrud Kessler, September 2009 - April 2010
+// Stefanie Wiltrud Kessler, September 2009 - July 2010
 // Project SUKRE
 // This software is licensed under the terms of a BSD license.
 
@@ -10,12 +10,14 @@ import java.io.IOException;
 import java.util.Vector;
 
 import coalda.base.Constants;
+import coalda.base.Utils;
 
 
 /**
-@author kesslewd
 
 Reads a matrix, vector or lines from a file.
+
+@author kesslewd
 */
 public class ReadFromFile extends Reader {
 
@@ -54,8 +56,10 @@ public class ReadFromFile extends Reader {
    private BufferedReader br;
 
 
+
+   // --------------- Methods for Matrix and Vector ---------------
+   
    /**
-      Method readMatrix.
       Reads a matrix of data.
       Afterwards use nextRow to position
       the cursor on the first row.
@@ -63,7 +67,7 @@ public class ReadFromFile extends Reader {
       
       @param type Type of information to read.
    */
-   public void readMatrix (InformationType type) {
+   public void readMatrix (MatrixInfo type) {
 
       // Reset everything
       dataColumns = null;
@@ -95,12 +99,10 @@ public class ReadFromFile extends Reader {
          case umatrix:
             filename = Constants.umatFile;
             break;
-         default: // no valid matrix to read!
-            return;
       }
 
       try {
-         br = Constants.openFile(filename);
+         br = Utils.openFile(filename);
          fileOpen = true;
       } catch (IOException e) {
          e.printStackTrace();
@@ -110,14 +112,13 @@ public class ReadFromFile extends Reader {
 
 
    /**
-      Method readVector.
       Reads a vector of data.
       After reading use nextValue to get the first value.
       Type of information must have been set previously.
       
       @param type Type of information to read.
    */
-   public void readVector (InformationType type) {
+   public void readVector (VectorInfo type) {
 
       // Reset everything
       dataColumns = null;
@@ -149,7 +150,7 @@ public class ReadFromFile extends Reader {
       }
 
       try {
-         br = Constants.openFile(filename);
+         br = Utils.openFile(filename);
          fileOpen = true;
       } catch (IOException e) {
          e.printStackTrace();
@@ -159,14 +160,13 @@ public class ReadFromFile extends Reader {
 
 
    /**
-      Method readCompleteVector.
       Reads a vector of data and returns it in an array.
       WARNING! Using this will make you unable to
       use 'nextValue' afterwards!!!
       
       @return Array containing single values of the vector.
    */
-   public String[] readCompleteVector (InformationType type) {
+   public String[] readCompleteVector (VectorInfo type) {
 
       readVector(type);
 
@@ -189,7 +189,6 @@ public class ReadFromFile extends Reader {
 
 
    /**
-      Method readLine.
       Reads a line from a file.
       If unsuccessful, null is returned.
       
@@ -210,7 +209,6 @@ public class ReadFromFile extends Reader {
 
 
    /**
-      Method hasNextRow.
       Checks if the matrix currently being read
       has a next row.
       
@@ -239,7 +237,6 @@ public class ReadFromFile extends Reader {
 
 
    /**
-      Method hasNextValue.
       Checks if the vector or the current row of the matrix
       currently being read has a next value.
       
@@ -265,7 +262,6 @@ public class ReadFromFile extends Reader {
 
 
    /**
-      Method nextRow.
       Returns the next row of the matrix
       currently being read as a String.
       If there is no next row, null is returned.
@@ -303,7 +299,6 @@ public class ReadFromFile extends Reader {
 
 
    /**
-      Method hasNextValue.
       Checks if the vector or the current row of the matrix
       currently being read has a next value.
       
@@ -343,7 +338,6 @@ public class ReadFromFile extends Reader {
 
 
    /**
-      Method numberOfValues.
       Returns the number of values in the current row of the matrix
       or in the vector currently being read.
       Will return 0 in case of error.
@@ -373,17 +367,36 @@ public class ReadFromFile extends Reader {
    }
 
 
+
+   // --------------- Methods for Lines ---------------
+   
    /**
-      Method readLines.
-      Reads lines of data that fit the given condition.
-      After reading use nextLine to get the first line.
-      !! WARNING, not implemented !! -- TODO
+      Reads and returns one line of data.
+      What data depends on the type of SingleInfo.
+      nextCalcID : 0
+      other: null
       
       @param type Type of information to read.
-      @param fields Columns of the data to be read.
-      @param condition Condition returned lines must fulfill.
+      @return String with the information read.
    */
-   public void readLines(InformationType type, String fields, String condition) {
+   public String readOneLine(SingleInfo type) {
+      switch (type) {
+         case nextCalcID:
+            return "0";
+         default:
+            return null;
+      }
+   }
+
+   
+   /**
+      Reads lines of data for the given feature vectors.
+      After reading use nextLine to get the first line.
+      
+      @param type Type of information to read.
+      @param featureVectors Which IDs to select.
+   */
+   public void readLines  (SingleInfo type, String featureVectors)  {
 
       // Reset everything
       dataColumns = null;
@@ -418,7 +431,7 @@ public class ReadFromFile extends Reader {
       }
 
       try {
-         br = Constants.openFile(filename);
+         br = Utils.openFile(filename);
          fileOpen = true;
       } catch (IOException e) {
          e.printStackTrace();
@@ -428,7 +441,6 @@ public class ReadFromFile extends Reader {
 
 
    /**
-      Method hasNextLine.
       Checks if the data currently being read has a next line.
       !! WARNING, not implemented !! -- TODO
       
@@ -440,11 +452,24 @@ public class ReadFromFile extends Reader {
 
 
    /**
-      Method nextLine.
       Returns the next line of the data
       currently being read as a String.
       If there is no next line, null is returned.
-      !! WARNING, not implemented !! -- TODO
+      Depending on the SingleInfo Type read,
+      the following information is returned.
+      features: row with 2 columns
+         row[0] : feature vector ID
+         row[1] : features of this vector
+      labels: row with 2 columns
+         row[0] : feature vector ID
+         row[1] : label of this feature vector
+      text: row with 4 columns
+         row[0] : feature vector ID
+         row[1] : markable 1 of the link
+         row[2] : markable 2 of the link
+         row[3] : sentences between the two markables
+      other: the information returned by 'readOneLine'
+         as row[0]
       
       @return Next row of line as String.
    */
@@ -453,8 +478,10 @@ public class ReadFromFile extends Reader {
    }
 
 
+   // --------------- Other methods ---------------
+   
+
    /**
-      Method finalize.
       Close any open file.
    */
    public void finalize() {
@@ -465,6 +492,9 @@ public class ReadFromFile extends Reader {
             // ignore exceptions
          }
    }
+
+
+
 
 
 }

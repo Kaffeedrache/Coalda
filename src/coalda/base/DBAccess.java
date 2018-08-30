@@ -418,7 +418,7 @@ public class DBAccess {
 
          // Open file with create skript
          // and search for the table to be created.
-         BufferedReader br = Constants.openFile(Constants.dbCreateScript);
+         BufferedReader br = Utils.openFile(Constants.dbCreateScript);
          String line;
          String createStatement = "";
          boolean inStatement = false;

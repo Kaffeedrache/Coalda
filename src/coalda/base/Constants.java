@@ -1,4 +1,4 @@
-// Stefanie Wiltrud Kessler, September 2009 - April 2010
+// Stefanie Wiltrud Kessler, September 2009 - July 2010
 // Project SUKRE
 // This software is licensed under the terms of a BSD license.
 
@@ -7,17 +7,13 @@ package coalda.base;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-
-import prefuse.util.io.IOLib;
 
 
 /**
 
-@author kesslewd
-
 This class contains a few constants to be used throughout the software.
+
+@author kesslewd
 
 */
 public class Constants {
@@ -29,8 +25,12 @@ public class Constants {
 
    /**
       Use the db or read information from files.
+      Possible values are:
+      0 - read from files
+      1 - read from db, raw SQL
+      2 - read from db, simpleORM
    */
-   public static boolean db = true;
+   public static int db = 0;
 
 
    // ====== Information for labeling ======
@@ -48,6 +48,31 @@ public class Constants {
    // disref = 0
    // unlabeled = -1
 
+
+   // ====== Information for layout ======
+
+   /**
+      Grid-layout.
+      Location is based on nodeXValue and nodeYValue.
+   */
+   public static String layoutGrid = "grid";
+
+   /**
+      Force-directed Layout.
+      Spring lenght is based on U-matrix value.
+   */
+   public static String layoutForce = "forcedirected";
+
+   /**
+      Possible layouts for the graph.
+      Write default field at index 0.
+   */
+   public static String[] possibleLayouts = 
+   {
+      layoutGrid,
+      layoutForce
+   };
+   
 
    // ====== Information for the visualization ======
 
@@ -136,21 +161,31 @@ public class Constants {
       each one has as its name nodeWeight + i,
       i being the ID of the feature.
    */
-   public static String nodeWeight = "Weight";
+   public static String nodeWeight = "Weight_";
 
    /**
       Field of visualItem of kind node,
-      used for saving the percentage of coreferent 
-      feature vectors associated with this node.
+      used for saving the number of  
+      feature vectors associated with this node
+      that have this label.
+      There are as many fields for the labels
+      as there are possible labels
+      each one has as its name nodeLabel_ + i,
+      i being the name of the label.
    */
-   public static String nodeProportion = "Proportion";
+   public static String nodeLabel = "Label_";
 
    /**
       Field of visualItem of kind node,
-      used for saving the percentage of disreferent 
-      feature vectors associated with this node.
+      used for saving the percentage of  
+      feature vectors associated with this node
+      that have this label.
+      There are as many fields for the labels
+      as there are possible labels
+      each one has as its name nodeProportion_ + i,
+      i being the name of the label.
    */
-   public static String nodeProportionDis = "ProportionDis";
+   public static String nodeProportion = "Proportion_";
 
    /**
       Field of visualItem of kind node,
@@ -159,21 +194,7 @@ public class Constants {
       coreferent feature vectors associated with that node
       and "b" the number of disreferent feature vectors.
    */
-   public static String nodeCoDisLabel = "CoDisLabel";
-
-   /**
-      Field of visualItem of kind node,
-      used for saving the number of
-      coreferent feature vectors associated with that node
-   */
-   public static String nodeCorefNumber = "Coreferent";
-
-   /**
-      Field of visualItem of kind node,
-      used for saving the number of
-      disreferent feature vectors associated with that node
-   */
-   public static String nodeDisrefNumber = "Disreferent";
+   public static String nodeCoDisLabel = "AllLabeled";
 
    /**
       Field of visualItem of kind edge,
@@ -221,6 +242,7 @@ public class Constants {
    */
    public static String features = "Features";
 
+
    /**
       Possible fields that can be used for
       coloring the nodes.
@@ -230,9 +252,6 @@ public class Constants {
    {
       nodeUmatValue,
       nodeFVNumber,
-      nodeProportionDis,
-      nodeCorefNumber,
-      nodeDisrefNumber
    };
 
    /**
@@ -244,17 +263,28 @@ public class Constants {
    {
       nodeCoDisLabel,
       nodeFVNumber,
-      nodeCorefNumber,
-      nodeDisrefNumber,
       nodeKey
    };
 
+
+   // ====== Information for feature definition file ======
+   
    /**
       File where the names of the features are defined,
       used for displaying them to the user in the side pane
       and calculating the number of features.
+      (read from config file)
    */
    public static String featureDefinitionsFile = "";
+
+
+   // ====== Information for matlab ======
+
+   /**
+      Computer where the matlab SOM server is running.
+      (read from config file)
+   */
+   public static String matlabServer = null;
 
 
    // ====== Information for import from database ======
@@ -356,34 +386,34 @@ public class Constants {
       File used for the import of calculations,
       contains map coordinates in output space.
    */
-   public static String coordsFile = "";
+   public static String coordsFile = "/media/sda5/Diplomarbeit/svnvis_coalda/data/sm.map.coords";
 
    /**
       File used for the import of calculations,
       contains the neighbourhood relations between
       nodes in output space.
    */
-   public static String neighboursFile =  "";
+   public static String neighboursFile =  "/media/sda5/Diplomarbeit/svnvis_coalda/data/sm.map.neighbors";
 
    /**
       File used for the import of calculations,
       contains the U-matrix values for nodes
       and edges.
    */
-   public static String umatFile =  "";
+   public static String umatFile =  "/media/sda5/Diplomarbeit/svnvis_coalda/data/umat";
 
    /**
       File used for the import of calculations,
       contains the BMU for every feature vector.
    */
-   public static String bmuFile =  "";
+   public static String bmuFile =  "/media/sda5/Diplomarbeit/svnvis_coalda/data/data.coords";
 
    /**
       File used for the import of calculations,
       contains the weights of the nodes
       in the input space dimensions.
    */
-   public static String codebookFile =  "";
+   public static String codebookFile =  "/media/sda5/Diplomarbeit/svnvis_coalda/data/sm.codebook";
 
    /**
       File used for the import of calculations,
@@ -393,35 +423,10 @@ public class Constants {
    public static String fvidsFile = "";
 
 
-   // ====== Information for matlab ======
+   // ====== Initialize ======
+
 
    /**
-      Computer where the matlab SOM server is running.
-   */
-   public static String matlabServer = null;
-
-
-   // ====== Methods ======
-
-   /**
-      Method openFile.
-      Method for opening a file at the given location.
-      @param location Path to the file.
-      @throws IOException if file is not found or cannot be opened.
-      @return Buffered Reader for read access to the file.
-   */
-   public static BufferedReader openFile (String location) throws IOException {
-      InputStream is = IOLib.streamFromString(location);
-      if ( is == null ) {
-         throw new IOException("Couldn't find " + location
-               + ". Not a valid file, URL, or resource locator.");
-      }
-      BufferedReader br = new BufferedReader(new InputStreamReader(is));
-      return br;
-   }
-
-   /**
-      Method getSettings.
       Initializes all variables values in this class
       from the configuration file.
       Variable values that can be set in the config file are:
@@ -434,7 +439,7 @@ public class Constants {
    */
    public static void getSettings() {
       try {
-         BufferedReader br = Constants.openFile(configFile);
+         BufferedReader br = Utils.openFile(configFile);
          String line = null;
 
          while ( (line=br.readLine()) != null )  {

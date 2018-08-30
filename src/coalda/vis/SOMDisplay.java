@@ -54,6 +54,10 @@ public class SOMDisplay extends Display {
    */
    private String currentLabelField;
 
+   /**
+      The calcluation ID of the display.
+   */
+   private int calcID;
 
    /**
       Constructor.
@@ -65,6 +69,9 @@ public class SOMDisplay extends Display {
       // Create a prefuse display with a new visualization.
       super(new Visualization());
 
+      // Set calculation ID
+      this.calcID = calculationID;
+      
       // Add the graph to the visualization as the data group "graph"
       m_vis.add("graph", graph);
 
@@ -88,7 +95,6 @@ public class SOMDisplay extends Display {
 
 
    /**
-      Method addActionList.
       Adds an action list to the visualization in the given group.
       @param group The group the action is to be added.
       @param action The action to be added.
@@ -99,7 +105,6 @@ public class SOMDisplay extends Display {
 
 
    /**
-      Method run.
       Runs the specified action group.
       @param actionGroup The action group to be run.
    */
@@ -114,7 +119,6 @@ public class SOMDisplay extends Display {
 
 
    /**
-      Method runAll.
       Runs all action groups.
    */
    public void runAll () {
@@ -127,7 +131,6 @@ public class SOMDisplay extends Display {
 
 
    /**
-      Method recolor.
       Puts the action into the group recolor
       and runs the action group recolor.
       @param action The action for recoloring.
@@ -139,7 +142,17 @@ public class SOMDisplay extends Display {
 
 
    /**
-      Method relabel.
+      Puts the action into the group layout
+      and runs the action group layout.
+      @param action The action for layouting.
+   */
+   public void relayout (Action action) {
+      m_vis.putAction(layoutGroup, action);
+      run(layoutGroup);
+   }
+
+
+   /**
       Relabels all nodes according to the selected field.
       @param field The field to be used for labeling.
    */
@@ -157,9 +170,16 @@ public class SOMDisplay extends Display {
       m_vis.setRendererFactory(rf);
    }
 
-
    /**
-      Method delete.
+      Get calculation ID of the calculation that is shown in this display.
+      @returns The ID of the calculation shown in this display.
+   */
+   public int getCalculationID() {
+      return calcID;
+   }
+   
+   
+   /**
       Deletes the display.
    */
    protected void delete() {

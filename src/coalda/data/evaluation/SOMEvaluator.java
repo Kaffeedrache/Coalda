@@ -7,21 +7,32 @@ package coalda.data.evaluation;
 
 import coalda.base.Constants;
 
-import coalda.data.LabelAccess;
+import coalda.data.LabelImport;
 import coalda.data.CalculationAccess;
+import coalda.data.LabelImport.LabelPair;
 
 import prefuse.data.Table;
 import prefuse.util.collections.IntIterator;
 
 
 /**
-@author kesslewd
 
 Evaluates the quality of a SOM.
 
+@author kesslewd
 */
 public class SOMEvaluator {
 
+   /**
+      Class for saving an evaluation result.
+      Containing precision, recall and F1-measure.
+   */
+   public static class ResultEV {
+      public double precision;
+      public double recall;
+      public double fmeasure;
+   }
+   
    /**
       Loads calculation data.
    */
@@ -35,7 +46,7 @@ public class SOMEvaluator {
    /**
       Loads labels of feature vectors.
    */
-   private LabelAccess allLabels;
+   private LabelImport allLabels;
 
    /**
       Debug mode.
@@ -49,7 +60,7 @@ public class SOMEvaluator {
    */
    public SOMEvaluator () {
       calcAccess = new CalculationAccess();
-      allLabels = new LabelAccess();
+      allLabels = new LabelImport();
    }
 
 
@@ -69,8 +80,9 @@ To create one measure out of precision and recall, the F1-measure $F_1$ is compu
 $$ F_1 =  2PR / (P+R)$$
 
       @param calculationID The ID of the calculation to evaluate.
+      @return Object containing precision, recall and f1-measure of the calculation.
     */
-   public void evaluate (int calculationID) {
+   public ResultEV evaluate (int calculationID) {
 
       System.out.println("Evaluating calculation id: " + calculationID);
       calcAccess.setCalcID(calculationID);
@@ -114,9 +126,9 @@ $$ F_1 =  2PR / (P+R)$$
          if (featureVectors != null) { // Node has associated feature vectors
 
             // Get number of coreferent/disrefernt feature vectors
-            int[] amount = allLabels.getCoDisref(featureVectors);
-            int coreferent = amount[0];
-            int disreferent = amount[1];
+            LabelPair amount = allLabels.getCoDisref(featureVectors);
+            int coreferent = amount.coreferent;
+            int disreferent = amount.disreferent;
 
             // New label is the label of the maximum class
             int newlabel = 0;
@@ -168,6 +180,12 @@ $$ F_1 =  2PR / (P+R)$$
       System.out.println("Recall = " + recall);
       float f1 = 2 * precision * recall / (precision + recall);
       System.out.println("F1 = " + f1);
+
+      ResultEV rev = new ResultEV();
+      rev.precision = precision;
+      rev.recall = recall;
+      rev.fmeasure = f1;
+      return rev;
 
    }
 
